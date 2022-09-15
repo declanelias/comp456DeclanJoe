@@ -1,0 +1,132 @@
+---
+title: "Untitled"
+output: html_document
+date: '2022-09-13'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(rtweet)
+library(dplyr)
+library(tidyverse)
+library(readxl)
+```
+
+
+
+How can you gain an edge in sports betting (social media, regression models, etc)?
+What forms of sports gambling tend to be most successful?
+How does the legalization of sports betting affect the state outside of sports?
+
+## 3
+
+```{r}
+rt <- search_tweets("Alabama football", n = 10000, include_rts = FALSE)
+```
+
+### (a)
+
+This data is the last 10,000 tweets containing the words "Alabama Football" in it taken from Twitter using the API.
+
+### (b)
+
+The data set is measuring tweets contiaing "Alabama Football". It contains the tweet itself, information about the tweet, and information about the user.
+
+### (c)
+
+The data set contains the 10,000 most recent tweets not including retweets. The data just looked for tweets that have the words "Alabama" and "football", so not all of the tweets may be about what I want. In addition there may be some tweets from bots or people trying to drive trafic to their page which contain the words Alabama and Football but actually have nothing to do with the Alabama football team
+
+### (d)
+
+Variable names:
+
+```{r}
+colnames(rt)
+```
+
+Some of the interesting variables:
+created_at : time and date of tweet
+full_text : contains the full text of the tweet
+coordinates : contains the coordinates of the location the tweet was sent from (only if location is turned on by user)
+reply_count : amount of replies
+retweet_count : amount of retweets
+favorite_count: amount of favorites
+
+```{r}
+spatial = lat_lng(rt)
+par(mar = c(0, 0, 0, 0))
+maps::map("state", lwd = .25)
+with(spatial, points(lng, lat, pch = 20, cex = .75, col = rgb(0, .3, .7, .75)))
+```
+
+## 2
+
+### (a)
+
+```{r}
+library(cfbfastR)
+library(dplyr)
+library(ggplot2)
+
+CFBD_API_KEY = "ysMTW4jIsv4kWgHXoM3yF8lVKm+4wNfuM9VKnZlrT5kavH0nXCxSyUpNGn4LKdtE"
+
+Sys.setenv(CFBD_API_KEY = CFBD_API_KEY)
+
+
+cfb.betting.2021 = cfbfastR::cfbd_betting_lines(year = 2021)
+```
+
+
+This data set is created by Saiem Gilani [cre, aut], Akshay Easwaran [aut], Jared Lee [aut], Eric Hess [aut], Michael Egle [ctb], Nate Manzo [ctb], Jason DeLoach [ctb], Tej Seth [ctb], Conor McQuiston [ctb], Tan Ho [ctb], Keegan Abdoo [ctb], Matt Spencer [ctb], Sebastian Carl [ctb], John Edwards [ctb] 
+
+## (b)
+
+The data set is measuring college football betting data from the 2021 FCS college football regular season.
+
+## (c)
+
+The data is pretty intensive. It does not contain individual game data, which we would like to have down the road, but it does contain betting lines, point spread, and point totals from every game played.
+
+## (d)
+
+```{r}
+colnames(cfb.betting.2021)
+```
+
+Some of the interesting variables:
+home_team : name of the home team
+away_team : name of the away team
+away_score : final points scored by the away team
+home_score : final points scored by the home team
+over_under : over_under point total set
+home_conference : the conference of the home team
+away_conference : the conference of the away team
+spread : point spread of the home team set by bookmakers (positive number means underdog by that many points, negative number means favorited by that many points)
+home_moneyline : home odds set by bookmakers
+
+## (e)
+
+
+```{r}
+
+cfb.betting.2021 %>%
+  group_by(home_conference) %>%
+  summarise(avg_ou = mean(as.numeric(over_under))) %>%
+  ggplot(aes(x = home_conference, y = avg_ou)) +
+  geom_col() +
+  scale_x_discrete(guide = guide_axis(n.dodge=3)) +
+  xlab("Conference") + 
+  ylab("Average Point Total") +
+  theme_bw()
+  
+  
+```
+
+
+## 4
+
+To join the two datasets, we would have to create some other variables using the data we had. We could take the public's opinion on twitter of an upcoming alabama football game from the twitter dataset and add that to the college football data set. 
