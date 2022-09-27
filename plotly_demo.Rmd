@@ -9,15 +9,14 @@ author: "Declan Elias and Joe Margolis"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
 This activity will give and introduction to making interactive, publication-quality graphs using Plotly's R graphing library. We will focus on using Plotly to create plots using machine learning models.
 
-In this activity you will learn:
-- Create displays for Linear Regression
-- Create Error and Residual Plots
+In this activity you will learn: - Create displays for Linear Regression - Create Error and Residual Plots
 
 # Installing Plotly
+
 Installing plotly is simple. Downloading and adding Plotly to your library takes 2 lines of code.
+
 ```{r eval=FALSE}
 install.packages("plotly")
 library(plotly)
@@ -30,7 +29,7 @@ library(plotly)
 
 # Creating a Basic Scatterplot using Plotly
 
-Creating an interactive scatterplot using Plotly is very simple. Specify a scatterplot by using `type = "scatter"` in the  `plot_ly()` function. Notice that the `x` and `y` arguments are specified as formulas with the tilde (~) operator preceding the variable. This will create a basic scatterplot that allows the user to interact with each individual point. 
+Creating an interactive scatterplot using Plotly is very simple. Specify a scatterplot by using `type = "scatter"` in the `plot_ly()` function. Notice that the `x` and `y` arguments are specified as formulas with the tilde (\~) operator preceding the variable. This will create a basic scatterplot that allows the user to interact with each individual point.
 
 This example uses a dataframe from the `reshape2` library called `tips` which contains data about the amount of tips a server receives. We plot the `total_bill` variable on the x-axis and the `tips` variable on the y-axis.
 
@@ -41,6 +40,19 @@ tips$sex <- as.character(tips$sex) # necessary for KNN Classification
 
 fig <- plot_ly(tips, x = ~total_bill, y = ~tip, type = 'scatter', alpha = 0.65, mode = 'markers', name = 'Tips')
 fig
+```
+
+### Create your own scatterplot!
+
+Using the `tips` data create your own scatterplot. We have provided code to guide you
+
+```{r eval=FALSE}
+
+x.variable = #add the variable you want on the x axis
+y.variable = #add the variable you want on the y axis
+
+my.fig <-plot_ly(tips , x = ~x.variable, y = ~y.variable, type = 'scatter', alpha = 0.65, mode = 'markers', name = 'Tips')
+my.fig
 ```
 
 
@@ -80,18 +92,62 @@ xy <- data.frame(xdf, ydf)
 
 ### Visualizing using Plotly
 
-To add a trend line using predicted data from our model, we use the `add_trace()` function. We pipe our figure into the function using `%>%`. We specify our data used for the line as dataframe containing 2 columns, one for the x values, and the second for the predicted y values. We set `mode = 'lines'` to indicate we are adding a line. We can display the same scatterplot with an updated trend line. 
+To add a trend line using predicted data from our model, we use the `add_trace()` function. We pipe our figure into the function using `%>%`. We specify our data used for the line as dataframe containing 2 columns, one for the x values, and the second for the predicted y values. We set `mode = 'lines'` to indicate we are adding a line. We can display the same scatterplot with an updated trend line.
 
 ```{r}
 fig <- fig %>% add_trace(data = xy, x = ~total_bill, y = ~tip, name = 'Regression Fit', mode = 'lines', alpha = 1)
 fig
 ```
 
+### Can You Create A Scatterplot On Your Own?
+
+We have done the preprocessing and fitting. Can you create the scatter plot and add the line yourself? The answers is below if you are having any trouble.
+
+```{r}
+data("iris")
+# Set the x and y data
+y <- iris$Petal.Width
+X <- iris$Petal.Length
+
+# Train our model
+lm_model <- linear_reg() %>% 
+  set_engine('lm') %>% 
+  set_mode('regression') %>%
+  fit(Petal.Width ~ Petal.Length, data = iris) 
+
+x_range <- seq(min(X), max(X), length.out = 150)
+x_range <- matrix(x_range, nrow=150, ncol=1)
+xdf <- data.frame(x_range)
+colnames(xdf) <- c('Petal.Length')
+
+ydf <- lm_model %>% predict(xdf) 
+
+colnames(ydf) <- c('Petal.Width')
+xy <- data.frame(xdf, ydf) 
+```
+
+```{r}
+#Add the plot hear
+```
+
+
+#### Answer
+
+```{r}
+# Create the scatterplot
+iris.fig <- plot_ly(iris, x = ~Petal.Width, y = ~Petal.Length, type = 'scatter', alpha = 0.65, mode = 'markers', name = 'Tips')
+# Add the trend line
+iris.fig <- iris.fig %>% add_trace(data = xy, x = ~Petal.Width, y = ~Petal.Length, name = 'Regression Fit', mode = 'lines', alpha = 1)
+iris.fig
+```
+
+
 ### Adding More Color
 
 Using the `add_trace()` function, you can easily color the data points based on a predefined factor. For example, in the following plot we split the data we used in the previous example into a training set and a test set. We can easily use different colors to display the training and test sets to see if the model generalizes well.
 
 We use `tidymodel` again to help us easily split the data and train our new model.
+
 ```{r results='hide'}
 set.seed(123)
 tips_split <- initial_split(tips)
@@ -117,14 +173,15 @@ colnames(ydf) <- c('tip')
 xy <- data.frame(xdf, ydf) 
 ```
 
-
 We then first create a simple scatter plot, this time only plotting the training data.
+
 ```{r}
 fig <- plot_ly(data = tips_training, x = ~total_bill, y = ~tip, type = 'scatter', name = 'train', mode = 'markers', alpha = 0.65) 
 fig
 ```
 
 We can then add the test data to the same scatter plot in a different color by using `add_trace()` again.
+
 ```{r}
 fig <- fig %>% 
   add_trace(data = tips_test, x = ~total_bill, y = ~tip, type = 'scatter', name = 'test', mode = 'markers', alpha = 0.65 )
@@ -133,9 +190,31 @@ fig
 ```
 
 And then finally we add the trend line.
+
 ```{r}
 fig <- fig %>% 
   add_trace(data = xy, x = ~total_bill, y = ~tip, name = 'prediction', mode = 'lines', alpha = 1)
+fig
+```
+
+### Practice Adding Color!
+
+We have given you the tips data set seperated into male and female, can you plot them on the same plot with total bill on the x axis and tip on the y axis, colored by sex?
+```{r}
+tips.female = tips %>% 
+  filter(sex == "Female")
+
+tips.male = tips %>%
+  filter(sex == "Male")
+# First create the plot of the females
+
+# Then add the plot of the males 
+```
+
+```{r}
+fig <- plot_ly(data = tips.female, x = ~total_bill, y = ~tip, type = 'scatter', name = 'female', mode = 'markers', alpha = 0.65) 
+fig <- fig %>% 
+  add_trace(data = tips.male, x = ~total_bill, y = ~tip, name = 'male', mode = 'markers', alpha = .65)
 fig
 ```
 
@@ -145,6 +224,7 @@ fig
 In addition to linear regression, we can also fit a KNN model to our data, which can be easily displayed as well in plotly.
 
 We first train 2 different KNN models.
+
 ```{r results='hide'}
 library(kknn)
 # Model #1
@@ -174,8 +254,8 @@ colnames(y_uni) <- c('uni')
 xy <- data.frame(xdf, y_dist, y_uni) 
 ```
 
-
 We can then create another scatterplot, using the same methods as before, but this time we color based on sex.
+
 ```{r}
 fig <- plot_ly(tips, type = 'scatter', mode = 'markers', colors = c("#FF7F50", "#6495ED")) %>% 
   add_trace(data = tips, x = ~total_bill, y = ~tip, type = 'scatter', mode = 'markers', color = ~sex, alpha = 0.65) 
@@ -184,6 +264,7 @@ fig
 ```
 
 We can then add our first KNN fit to the scatterplot, using the same method as with the linear trend.
+
 ```{r}
 fig <- fig %>% 
   add_trace(data = xy, x = ~total_bill, y = ~dist, name = 'Weights: Distance', mode = 'lines', alpha = 1) 
@@ -192,6 +273,7 @@ fig
 ```
 
 And finally our second KNN fit as well.
+
 ```{r}
 fig <- fig %>%
   add_trace(data = xy, x = ~total_bill, y = ~uni, name = 'Weights: Uniform', mode = 'lines', alpha = 1) 
@@ -203,7 +285,6 @@ fig
 In certain instances, error plots tell a better story of the data. Just as regression was simple to plot, so are error plots.
 
 ### Simple Actual vs Predicted Error Plot
-
 
 First a simple ggplot is created which displays prediction on the y axis and the truth on the x-axis.
 
@@ -238,6 +319,7 @@ p1
 ```
 
 The plot is then passed into `ggplotly()` which creates an interactive version of the ggplot.
+
 ```{r}
 p1 <-  ggplotly(p1)
 p1
@@ -248,6 +330,7 @@ p1
 Similarly, we can easily display residual plots.
 
 We first create our model and predictions.
+
 ```{r}
 data(iris)
 
@@ -332,7 +415,6 @@ tips[test_index,'split'] = 'Testing'
 tips$Table_Gender <- paste(tips$split,tips$sex)
 ```
 
-
 Now we can plot this in a scatterplot using shaped and dotted shapes to recreate the previous scatterplot checking female and male tip and bill costs, onky this time now we are able to check how representative out testing data is compared to the training data. The goal is to find some pattern similarities between the testing and training data in order to validate the new training data
 
 ```{r}
@@ -387,7 +469,6 @@ library(kknn)
 library(tidymodels)
 ```
 
-
 ```{r}
 tips_original <- tips %>%
   select(total_bill, tip, sex)
@@ -436,5 +517,3 @@ Z <- matrix(predicted, dim_val[1], dim_val[2])
 fig <- plot_ly(x = xrange, y= yrange, z = Z, colorscale='RdBu', type = "contour")
 fig
 ```
-
-

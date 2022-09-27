@@ -123,7 +123,21 @@ cfb.betting.2021 %>%
   ylab("Average Point Total") +
   theme_bw()
   
-  
+cfb.betting.2021 %>%
+  mutate(big10 = )
+
+unique(cfb.betting.2021$home_conference)[1:11]
+
+conference_in_game = function(conference, home_conference, away_conference) {
+  return(conference %in% home_conference |  conference %in% away_conference)
+}
+
+cfb.betting.2021 %>%
+  mutate(big10 = conference_in_game("Big Ten", home_conference, away_conference),
+         mtw = conference_in_game("Mountain West", home_conference, away_conference),
+         mac = conference_in_game("Mid-American", home_conference, away_conference),
+         aac = conference_in_game("American Athletic", home_conference, away_conference))
+
 ```
 
 
