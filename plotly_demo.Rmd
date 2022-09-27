@@ -2,7 +2,7 @@
 title: "Intro to Plotly"
 output: 
   html_document:
-    toc_float: true
+    toc: true
 date: '2022-09-21'
 author: "Declan Elias and Joe Margolis"
 ---
@@ -394,6 +394,7 @@ plotly::layout(s, showlegend = FALSE) # necessary to ensure it uses layout funct
 ```
 
 
+# ML Classification in R
 
 ### KNN Classification
 
