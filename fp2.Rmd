@@ -1,0 +1,49 @@
+---
+title: "fp2declan"
+output: html_document
+date: '2022-09-27'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(cfbfastR)
+library(dplyr)
+library(ggplot2)
+
+CFBD_API_KEY = "ysMTW4jIsv4kWgHXoM3yF8lVKm+4wNfuM9VKnZlrT5kavH0nXCxSyUpNGn4LKdtE"
+
+Sys.setenv(CFBD_API_KEY = CFBD_API_KEY)
+
+
+cfb.betting.2021 = cfbfastR::cfbd_betting_lines(year = 2021)
+```
+
+
+
+```{r}
+team_in_conference = function(conference, home_conference, away_conference) {
+  return(conference == home_conference | conference == away_conference)
+}
+
+unique(cfb.betting.2021$home_conference)[1:11]
+
+
+
+
+cfb.betting.2021 %>%
+  mutate(mac = team_in_conference("Mid-American", home_conference, away_conference),
+         aac = team_in_conference("American Athletic", home_conference, away_conference),
+         acc = team_in_conference("ACC", home_conference, away_conference),
+         mtw = team_in_conference("Mountain West", home_conference, away_conference),
+         big10 = team_in_conference("Big Ten", home_conference, away_conference),
+         pac12 = team_in_conference("Pac-12", home_conference, away_conference),
+         independent = team_in_conference("FBS Independents", home_conference, away_conference),
+         big12 = team_in_conference("Big 12", home_conference, away_conference),
+         sbc = team_in_conference("Sun Belt", home_conference, away_conference),
+         sec = team_in_conference("SEC", home_conference, away_conference),
+         cusa = team_in_conference("Conference USA", home_conference, away_conference))
+```
+
