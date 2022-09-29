@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(cfbfastR)
 library(dplyr)
 library(ggplot2)
+library(plotly)
 
 CFBD_API_KEY = "ysMTW4jIsv4kWgHXoM3yF8lVKm+4wNfuM9VKnZlrT5kavH0nXCxSyUpNGn4LKdtE"
 
@@ -33,7 +34,7 @@ unique(cfb.betting.2021$home_conference)[1:11]
 
 
 
-cfb.betting.2021 %>%
+CFBConf <- cfb.betting.2021 %>%
   mutate(mac = team_in_conference("Mid-American", home_conference, away_conference),
          aac = team_in_conference("American Athletic", home_conference, away_conference),
          acc = team_in_conference("ACC", home_conference, away_conference),
@@ -45,5 +46,101 @@ cfb.betting.2021 %>%
          sbc = team_in_conference("Sun Belt", home_conference, away_conference),
          sec = team_in_conference("SEC", home_conference, away_conference),
          cusa = team_in_conference("Conference USA", home_conference, away_conference))
+
+CFBConf <- CFBConf[ !is.na(CFBConf$spread), ]
+
+mac <- CFBConf %>%
+  filter(mac == TRUE) %>%
+  summarise("Conference" = "Mid-American", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+aac <- CFBConf %>%
+  filter(aac == TRUE) %>%
+  summarise("Conference" = "American Athletic", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+acc <- CFBConf %>%
+  filter(acc == TRUE) %>%
+  summarise("Conference" = "ACC", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+mtw <- CFBConf %>%
+  filter(mtw == TRUE) %>%
+  summarise("Conference" = "Mountain West", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+big10 <- CFBConf %>%
+  filter(big10 == TRUE) %>%
+  summarise("Conference" = "Big 10", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+pac12 <- CFBConf %>%
+  filter(pac12 == TRUE) %>%
+  summarise("Conference" = "Pac-12", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+independent <- CFBConf %>%
+  filter(independent == TRUE) %>%
+  summarise("Conference" = "Independent", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+big12 <- CFBConf %>%
+  filter(big12 == TRUE) %>%
+  summarise("Conference" = "Big 12", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+sbc <- CFBConf %>%
+  filter(sbc == TRUE) %>%
+  summarise("Conference" = "Sun Belt", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+sec <- CFBConf %>%
+  filter(sec == TRUE) %>%
+  summarise("Conference" = "SEC", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+cusa <- CFBConf %>%
+  filter(cusa == TRUE) %>%
+  summarise("Conference" = "Conference USA", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+Spreads <- mac %>%
+  rbind(aac)
+
+Spreads <- Spreads %>%
+  rbind(acc)
+
+Spreads <- Spreads %>%
+  rbind(big10)
+
+Spreads <- Spreads %>%
+  rbind(mtw)
+
+Spreads <- Spreads %>%
+  rbind(pac12)
+
+Spreads <- Spreads %>%
+  rbind(independent)
+
+Spreads <- Spreads %>%
+  rbind(big12)
+
+Spreads <- Spreads %>%
+  rbind(sbc)
+
+Spreads <- Spreads %>%
+  rbind(sec)
+
+Spreads <- Spreads %>%
+  rbind(cusa)
+```
+
+```{r}
+Spreads <- Spreads %>%
+  pivot_longer(cols=c(`Spread`, `Outcome`),names_to="Spread/Outcome",values_to="Average")
+
+Spreads$Conference <- factor(Spreads$Conference, levels = c("SEC", "Mid-American", "Conference USA", "Big 10", "Mountain West", "Big 12", "ACC", "Pac-12", "Independent", "American Athletic", "Sun Belt"))
+
+```
+
+```{r}
+vis <- ggplot(Spreads, aes(x = Conference, y = - `Average`, fill = `Spread/Outcome`)) +
+  geom_col(position = "dodge") +
+  labs(y = "Average Score Difference", title = "Average Difference Between Spread and Outcomes By Conference") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  theme_minimal()
+
+ggplotly(vis) %>%
+  layout(xaxis = list( tickangle = 45))
+  
 ```
 
