@@ -1,5 +1,6 @@
 ---
-title: "fp2declan"
+title: "FP2"
+author: Joe and Declan
 output: html_document
 date: '2022-09-27'
 ---
@@ -13,6 +14,7 @@ library(cfbfastR)
 library(dplyr)
 library(ggplot2)
 library(plotly)
+library(tidyverse)
 
 CFBD_API_KEY = "ysMTW4jIsv4kWgHXoM3yF8lVKm+4wNfuM9VKnZlrT5kavH0nXCxSyUpNGn4LKdtE"
 
