@@ -142,7 +142,7 @@ vis <- ggplot(Spreads, aes(x = Conference, y = - `Average`, fill = `Spread/Outco
   theme_minimal()
 
 ggplotly(vis) %>%
-  layout(xaxis = list( tickangle = 45))
+  layout(xaxis = list(tickangle = 45, tickfont  = 22, titlefont = 22))
   
 ```
 
