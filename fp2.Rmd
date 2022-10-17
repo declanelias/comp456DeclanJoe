@@ -151,3 +151,89 @@ The visualization displays the average point difference (orange) and expected po
 The average scores for the SEC immediately grab attention as the conference overwhelmingly has the largest actual and expected point difference. This makes sense as the SEC contained the National Champion (Georgia), as well as the runner up (Alabama). Additionally, the top of the SEC competes nationally, but there is a steep decline in quality as you reach the bottom of the conference, meaning that when beter teams play worse teams, there will be a very large point difference. We do not see a similar trend for the other Power 5 conferences. The Pac 12 and Big 10 have an average predicted point difference, but a below average actual point difference. This follows for both the conferences, as the Pac 12 had a down year with no stand out teams competeing on the National Stage. The Big 10 is generally not known for its offensive play so it makes sense that Big 10 teams would not be favored by a lot or win by a lot. 
 
 The Sun Belt and the Mountain West exhibit some interesting trends from the Group of 5. The difference in Sun Belt games was considerably larger than the average spread, with the Mountain West showing the opposite. this could be due to the fact that Vegas was over estimating Mountain West teams, and underestimating Sun Belt teams. More in depth analysis would need to be done to see if this theory holds true. Overall, the rest of the conferences had similar average point differences and spreads. 
+
+
+```{r}
+
+cfb = CFBConf %>%
+  group_by(game_id) %>%
+  summarise(spraed = mean(as.numeric(spread))) %>%
+  ungroup()
+
+
+cfb = CFBConf %>%
+  mutate(non_conf = home_conference != away_conference,
+         home_spread = as.numeric(spread),
+         away_spread = -as.numeric(spread))
+
+conferences = unique(cfb.betting.2021$home_conference)[1:11]
+
+cfb %>%
+  group_by(home_conference) %>%
+  summarise(avg.spread = mean(home_spread))
+
+cfb %>%
+  group_by(away_conference) %>%
+  summarise(avg.spraed = mean(away_spread))
+
+cfb[,""]
+
+```
+
+for i in row:
+  get home_conference
+  add home spread to that conference
+  get away_conference
+  add away spread to that conference
+  
+  
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+cfb = cfb.betting.2021 %>%
+  filter(!is.na(spread_open))
+
+
+cfb.home = cfb %>%
+  select(home_conference, spread) %>%
+  mutate(spread = as.numeric(spread),
+         home = 1)
+
+names(cfb.home)[names(cfb.home) == "home_conference"] = "conference"
+
+cfb.away = cfb %>%
+  select(away_conference, spread) %>%
+  mutate(spread = -as.numeric(spread),
+         home = 0)
+
+names(cfb.away)[names(cfb.away) == "away_conference"] = "conference"
+
+
+cfb.away
+cfb.home
+
+fbs.conferences = unique(cfb.betting.2021$home_conference)[1:11]
+
+cfb.spread = rbind(cfb.away, cfb.home) %>%
+  mutate(conference = ifelse(conference %in% fbs.conferences, conference, "FCS"))
+
+cfb.spread %>%
+  group_by(conference) %>%
+  summarise(avg.spread = mean(spread))
+
+vis = cfb.spread %>%
+  group_by(conference) %>%
+  summarise(avg.spread = mean(spread)) %>%
+  ggplot(aes(x = conference, y = avg.spread)) + 
+  geom_col()
+
+vis
+```
+
+```{r}
+cfb = cfb %>%
+  mutate(nonconf = home_conference != away_conference)
+```
+
