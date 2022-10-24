@@ -3,6 +3,7 @@ title: "Intro to Plotly"
 output: 
   html_document:
     toc: true
+    toc_float: true
 date: '2022-09-21'
 author: "Declan Elias and Joe Margolis"
 ---
@@ -13,7 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This activity will give and introduction to making interactive, publication-quality graphs using Plotly's R graphing library. We will focus on using Plotly to create plots using machine learning models.
 
-In this activity you will learn: - Create displays for Linear Regression - Create Error and Residual Plots
+In this activity you will learn: 
+- Create displays for Linear Regression 
+- Create Error and Residual Plots
+- Create visualizations for Classification
 
 # Installing Plotly
 
