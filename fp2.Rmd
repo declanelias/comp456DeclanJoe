@@ -237,3 +237,22 @@ cfb = cfb %>%
   mutate(nonconf = home_conference != away_conference)
 ```
 
+```{r}
+OUConf <- cfb %>%
+  filter(home_conference == away_conference) %>%
+  mutate(total = away_score+home_score) %>%
+  mutate(OverHit = ifelse(total > over_under, 1, 0)) %>%
+  mutate(over_under = as.numeric(over_under)) %>%
+  mutate( OverCat = cut(over_under , c(30,35,40,45,50,55,60,65,max(over_under)))) %>%
+  group_by(home_conference, OverCat) %>%
+  summarise("HitPercent" = sum(OverHit/n()), "total" = n())
+
+OUConfVis <- ggplot(OUConf, aes(x=OverCat, y=HitPercent)) + 
+        geom_col(color="white") +
+        facet_wrap( ~ home_conference) +
+        labs(xlab = "Over-Under Range", ylab = "Percent of Overs that Hit") +
+        theme_minimal()
+
+ggplotly(OUConfVis) 
+```
+
