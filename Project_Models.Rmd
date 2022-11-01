@@ -20,3 +20,7 @@ conflicted::conflict_prefer("vi", "vip")
 ```
 
 
+```{r}
+NCAA <- load("ncaaf_2022_df.RData")
+```
+
