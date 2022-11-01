@@ -1,0 +1,2 @@
+load("/Users/joemargolis/Documents/Comp 127/GitHub/comp456DeclanJoe/ncaaf_2022_df.rdata")
+view("/Users/joemargolis/Documents/Comp 127/GitHub/comp456DeclanJoe/ncaaf_2022_df.rdata")
