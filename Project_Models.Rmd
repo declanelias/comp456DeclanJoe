@@ -21,6 +21,50 @@ conflicted::conflict_prefer("vi", "vip")
 
 
 ```{r}
-NCAA <- load("ncaaf_2022_df.RData")
+load("ncaaf_2022_df.RData")
+load("nfl_2022_df.RData")
+```
+
+```{r}
+NFLteams <- bind_rows(nfl_2022_df$teams, .id = "column_label")
+
+NFLteams <- NFLteams %>%
+  group_by(id, full_name) %>%
+  summarise()
+
+NFL2022 <- nfl_2022_df %>%
+  group_by(away_team_id) %>%
+  left_join(NFLteams, by =  c("away_team_id" = "id" )) %>%
+  ungroup() 
+
+colnames(NFL2022)[30] <- "away_team_name"
+
+NFL2022 <- NFL2022 %>%
+  group_by(home_team_id) %>%
+  left_join(NFLteams, by =  c("home_team_id" = "id" )) %>%
+  ungroup() 
+  
+colnames(NFL2022)[31] <- "home_team_name"
+```
+```{r}
+NCAAteams <- bind_rows(ncaaf_2022_df$teams, .id = "column_label")
+
+NCAAteams <- NCAAteams %>%
+  group_by(id, full_name) %>%
+  summarise()
+
+NCAA2022 <- ncaaf_2022_df %>%
+  group_by(away_team_id) %>%
+  left_join(NCAAteams, by =  c("away_team_id" = "id" )) %>%
+  ungroup() 
+
+colnames(NCAA2022)[30] <- "away_team_name"
+
+NCAA2022 <- NCAA2022 %>%
+  group_by(home_team_id) %>%
+  left_join(NCAAteams, by =  c("home_team_id" = "id" )) %>%
+  ungroup() 
+  
+colnames(NCAA2022)[31] <- "home_team_name"
 ```
 
