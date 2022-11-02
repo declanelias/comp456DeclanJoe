@@ -98,3 +98,24 @@ for (i in 1:9) {
 ```{r}
 save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
 ```
+
+
+# NBA Data
+
+```{r}
+url = "https://api.actionnetwork.com/web/v1/scoreboard/nba?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79"
+nba_2022_df = NULL
+for (i in 18:30) {
+  temp_url = param_set(url, "date", paste(202210, i, sep = ""))
+  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+  nba_2022_df = rbind(nba_2022_df, clean_df(resp_df, i))
+  Sys.sleep(1)
+  print(paste("finished", i))
+}
+
+seq(as.Date("2021-10-10"), as.Date("2022-04-10"), by="days")
+
+as.Date("2021-10-10", format=c('%m %d %y'))
+```
+
