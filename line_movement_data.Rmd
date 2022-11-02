@@ -24,6 +24,39 @@ library(httr)
 
 ```{r}
 load("betting_data.rdata")
+```
+
+```{r}
+NFL <- betting_data %>%
+  filter(league_name == "nfl") %>%
+  filter(season == 2022 | season == 2021) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NCAAF <- betting_data %>%
+  filter(league_name == "ncaaf") %>%
+  filter(season == 2022 | season == 2021) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+MLB <- betting_data %>%
+  filter(league_name == "mlb") %>%
+  filter(season == 2022 | season == 2021) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NHL <- betting_data %>%
+  filter(league_name == "nhl") %>%
+  filter(season == 2022 | season == 2021) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NBA <- betting_data %>%
+  filter(league_name == "nba") %>%
+  filter(season == 2022 | season == 2021) %>%
+  group_by(id) %>%
+  summarise(t = n())
+```
 
 
 game_id = 132525
@@ -32,5 +65,119 @@ url = paste(url, game_id, "/oddshistory")
 resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
 resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
 
+resp_df <- resp_df %>%
+  mutate(id = 132525)
+
+
+
+```{r}
+clean_df = function(df, id) {
+  
+  # select the rows we need
+  df = df %>%
+    select(id, start_time, away_team_id, home_team_id, ml_away, ml_home, spread_away, spread_home, total,away_total, home_total, league_name )
+  
+  # remove unnecessary variables in the odds
+  df = df %>%
+    select(-c(ml_home_public, ml_away_public, spread_home_public, spread_away_public, total_under_public, total_over_public, ml_home_money, ml_away_money, 
+              spread_home_money, total_over_money, total_under_money, num_bets, type, inserted, line_status, spread_away_line, spread_home_line))
+  
+  return(df)
+}
 ```
 
+
+```{r}
+NFL_movement_df = NULL
+
+for (id in NFL$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_df = rbind(NFL_movement_df, resp_df)
+  }
+
+
+```
+
+```{r}
+NCAAF_movement_df = NULL
+
+for (id in NCAAF$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "ncaal")
+    NCAAF_movement_df = rbind(NCAAF_movement_df, resp_df)
+  }
+
+
+```
+
+```{r}
+MLB_movement_df = NULL
+
+for (id in MLB$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "mlb")
+    MLB_movement_df = rbind(MLB_movement_df, resp_df)
+  }
+
+
+```
+
+```{r}
+NHL_movement_df = NULL
+
+for (id in NHL$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nhl")
+    NHL_movement_df = rbind(NHL_movement_df, resp_df)
+  }
+
+
+```
+
+```{r}
+NBA_movement_df = NULL
+
+for (id in NBA$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nba")
+    NBA_movement_df = rbind(NBA_movement_df, resp_df)
+  }
+
+
+```

@@ -17,6 +17,10 @@ library(XML)
 library(RCurl)
 library(RTidyHTML)
 library(httr)
+library(urltools)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
 ```
 
 
