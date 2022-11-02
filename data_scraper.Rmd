@@ -1,4 +1,4 @@
----
++---
 title: "data scraper"
 output: html_document
 date: '2022-11-01'
@@ -22,7 +22,7 @@ library(httr)
 
 
 ```{r}
-clean_df = function(df, week) {
+clean_df = function(df, week, season) {
   
   # select the rows we need
   df = df %>%
@@ -55,7 +55,8 @@ clean_df = function(df, week) {
   
   # add the week
   df = df %>%
-    mutate(week = week)
+    mutate(week = week,
+           season = season)
   
   return(df)
 }
@@ -65,15 +66,34 @@ clean_df = function(df, week) {
 
 ```{r}
 url = "https://api.actionnetwork.com/web/v1/scoreboard/nfl?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79&seasonType=reg"
-nfl_2022_df = NULL
+
+nfl_df = NULL
+
+for (season in 2017:2021) {
+  
+  weeks = if_else(season == 2021, 18, 17)
+  
+  for (week in 1:weeks) {
+    temp_url = param_set(url, "week", week) %>% param_set("season", season)
+    resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+    resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+    nfl_df = rbind(nfl_df, clean_df(resp_df, week, season))
+    
+    Sys.sleep(1)
+    print(paste("finished week",week, season))
+  }
+}
+
+
 for (i in 1:7) {
   temp_url = param_set(url, "week", i)
   resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
   resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-  nfl_2022_df = rbind(nfl_2022_df, clean_df(resp_df, i))
+  nfl_df = rbind(nfl_df, clean_df(resp_df, i, 2022))
   Sys.sleep(1)
   print(paste("finished week",i))
 }
+
 ```
 
 ```{r}
@@ -84,15 +104,35 @@ save(nfl_2022_df, file = "nfl_2022_df.rdata")
 
 ```{r}
 url = "https://api.actionnetwork.com/web/v1/scoreboard/ncaaf?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79&seasonType=reg"
-ncaaf_2022_df = NULL
+ncaaf_df = NULL
+
+for (season in 2017:2021) {
+  week = 1
+  temp_url = param_set(url, "week", week) %>% param_set("season", season)
+  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+  while (length(resp_df) > 0) {
+    ncaaf_df = rbind(ncaaf_df, clean_df(resp_df, week, season))
+    Sys.sleep(1)
+    print(paste("finished week",week,season))
+    temp_url = param_set(url, "week", week) %>% param_set("season", season)
+    resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+    resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+    week = week + 1
+  }
+}
+
+
 for (i in 1:9) {
   temp_url = param_set(url, "week", i)
   resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
   resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-  ncaaf_2022_df = rbind(ncaaf_2022_df, clean_df(resp_df, i))
+  ncaaf_df = rbind(ncaaf_df, clean_df(resp_df, i, 2022))
   Sys.sleep(1)
   print(paste("finished week",i))
 }
+
+
 ```
 
 ```{r}
@@ -100,22 +140,150 @@ save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
 ```
 
 
+
+
 # NBA Data
 
 ```{r}
-url = "https://api.actionnetwork.com/web/v1/scoreboard/nba?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79"
-nba_2022_df = NULL
-for (i in 18:30) {
-  temp_url = param_set(url, "date", paste(202210, i, sep = ""))
-  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
-  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-  nba_2022_df = rbind(nba_2022_df, clean_df(resp_df, i))
-  Sys.sleep(1)
-  print(paste("finished", i))
+format_date = function(date) {
+  date = as.character(date)
+  date = gsub("-", "", date)
+  return(date)
 }
 
-seq(as.Date("2021-10-10"), as.Date("2022-04-10"), by="days")
+get_season = function(date) {
+  if (date %in% days2017) {
+    return(2017)
+  }
+  if (date %in% days2018) {
+    return(2018)
+  }
+  if (date %in% days2019) {
+    return(2019)
+  }
+  if (date %in% days2020) {
+    return(2020)
+  }
+  if (date %in% days2021) {
+    return(2021)
+  }
+  if (date %in% days2022) {
+    return(2022)
+  }
+}
 
-as.Date("2021-10-10", format=c('%m %d %y'))
+days2017 = format_date(seq(as.Date("2017-10-17"), as.Date("2018-4-28"), by="days"))
+days2018 = format_date(seq(as.Date("2018-10-16"), as.Date("2019-4-10"), by="days"))
+days2019 = c(format_date(seq(as.Date("2019-10-22"), as.Date("2020-3-11"), by="days")), 
+             format_date(seq(as.Date("2020-7-30"), as.Date("2020-8-14"), by="days")))
+days2020 = format_date(seq(as.Date("2020-12-22"), as.Date("2021-5-16"), by="days"))
+days2021 = format_date(seq(as.Date("2021-10-19"), as.Date("2022-4-10"), by="days"))
+days2022 = format_date(seq(as.Date("2022-10-18"), as.Date("2022-10-31"), by="days"))
+days = c(days2017, days2018, days2019, days2020, days2021, days2022)
+
+
+url = "https://api.actionnetwork.com/web/v1/scoreboard/nba?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79"
+nba_df = NULL
+for (day in days) {
+  temp_url = param_set(url, "date", day)
+  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+  if (length(resp_df) != 0) {
+    nba_df = rbind(nba_df, clean_df(resp_df, day, get_season(day)))
+  }
+  print(paste("finished",day))
+}
+
+
+load("betting_data.rdata")
+
+betting_data = rbind(betting_data, nba_df)
+save(betting_data, file = "betting_data.rdata")
 ```
+
+# NHL Data
+
+```{r}
+get_season = function(date) {
+  if (date %in% days2017) {
+    return(2017)
+  }
+  if (date %in% days2018) {
+    return(2018)
+  }
+  if (date %in% days2019) {
+    return(2019)
+  }
+  if (date %in% days2020) {
+    return(2020)
+  }
+  if (date %in% days2021) {
+    return(2021)
+  }
+  if (date %in% days2022) {
+    return(2022)
+  }
+}
+
+days2017 = format_date(seq(as.Date("2017-10-04"), as.Date("2018-06-07"), by="days"))
+days2018 = format_date(seq(as.Date("2018-10-3"), as.Date("2019-6-12"), by="days"))
+days2019 = c(format_date(seq(as.Date("2019-10-02"), as.Date("2020-03-11"), by="days")), 
+             format_date(seq(as.Date("2020-08-01"), as.Date("2020-9-30"), by="days")))
+days2020 = format_date(seq(as.Date("2021-01-13"), as.Date("2021-07-07"), by="days"))
+days2021 = format_date(seq(as.Date("2021-10-01"), as.Date("2022-06-10"), by="days"))
+days2022 = format_date(seq(as.Date("2022-10-01"), as.Date("2022-10-31"), by="days"))
+days = c(days2017, days2018, days2019, days2020, days2021, days2022)
+
+url = "https://api.actionnetwork.com/web/v1/scoreboard/nhl?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79"
+nhl_df = NULL
+for (day in days[975:length(days)]) {
+  temp_url = param_set(url, "date", day)
+  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+  if (length(resp_df) != 0 & "odds" %in% colnames(resp_df) & "boxscore" %in% colnames(resp_df)) {
+    nhl_df = rbind(nhl_df, clean_df(resp_df, day, get_season(day)))
+  }
+  print(paste("finished",day))
+}
+
+match(days,"20220326")
+
+which(days == 20220404)
+```
+
+
+
+```{r}
+betting_data = rbind(betting_data, nhl_df)
+```
+
+
+
+# MLB
+
+```{r}
+days2017 = format_date(seq(as.Date("2017-04-27"), as.Date("2017-10-01"), by="days"))
+days2018 = format_date(seq(as.Date("2018-03-29"), as.Date("2019-10-28"), by="days"))
+days2019 = format_date(seq(as.Date("2019-03-20"), as.Date("2019-10-30"), by="days"))
+days2020 = format_date(seq(as.Date("2020-07-23"), as.Date("2020-10-28"), by="days"))
+days2021 = format_date(seq(as.Date("2021-04-01"), as.Date("2022-10-03"), by="days"))
+days2022 = format_date(seq(as.Date("2022-04-07"), as.Date("2022-10-02"), by="days"))
+days = c(days2017, days2018, days2019, days2020, days2021, days2022)
+
+
+url = "https://api.actionnetwork.com/web/v1/scoreboard/mlb?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79"
+mlb_df = NULL
+for (day in days[1431:length(days)]) {
+  temp_url = param_set(url, "date", day)
+  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+  if (length(resp_df) != 0 & "odds" %in% colnames(resp_df) & "boxscore" %in% colnames(resp_df)) {
+    mlb_df = rbind(mlb_df, clean_df(resp_df, day, get_season(day)))
+  }
+  print(paste("finished",day))
+}
+
+betting_data = rbind(betting_data, mlb_df)
+```
+
 

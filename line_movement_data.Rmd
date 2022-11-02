@@ -1,0 +1,36 @@
+---
+title: "Line Movement Scraper"
+output: html_document
+date: '2022-11-02'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r}
+library(rvest)
+library(dplyr)
+library(magrittr)
+library(XML)
+library(RCurl)
+library(httr)
+```
+
+
+
+```{r}
+load("betting_data.rdata")
+
+
+game_id = 132525
+url = "https://api.actionnetwork.com/web/v1/games/"
+url = paste(url, game_id, "/oddshistory")
+resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+
+```
+
