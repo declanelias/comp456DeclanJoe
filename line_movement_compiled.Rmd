@@ -30,11 +30,194 @@ load("NBA_movement_df.rdata")
 NFL_movement_df <- NFL_movement_df %>%
   mutate(inserted = gsub("T"," ", inserted)) %>%
   mutate(inserted = gsub("Z","", inserted)) %>%
-  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S"))
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NFL_movement_df <- cbind(Index = 1:nrow(NFL_movement_df), NFL_movement_df)   
 
 NFL_final_line <- NFL_movement_df %>%
   group_by(id, book_id) %>%
   slice(which.max(as.POSIXct(inserted)))
 
+NFL_previous_lines <- NFL_movement_df %>%
+  anti_join(NFL_final_line, by = "Index")
+```
+
+```{r}
+NFL_final_line <- NFL_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NFL_final_line)[1] <- "away_Final_Line"
+colnames(NFL_final_line)[2] <- "home_Final_Line"
+
+NFL_previous_lines <- NFL_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NFL_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NFL_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+
+```{r}
+NCAAF_movement_df <- NCAAF_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NCAAF_movement_df <- cbind(Index = 1:nrow(NCAAF_movement_df), NCAAF_movement_df)   
+
+NCAAF_final_line <- NCAAF_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NCAAF_previous_lines <- NCAAF_movement_df %>%
+  anti_join(NCAAF_final_line, by = "Index")
+```
+
+```{r}
+NCAAF_final_line <- NCAAF_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NCAAF_final_line)[1] <- "away_Final_Line"
+colnames(NCAAF_final_line)[2] <- "home_Final_Line"
+
+NCAAF_previous_lines <- NCAAF_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NCAAF_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NCAAF_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+MLB_movement_df <- MLB_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+MLB_movement_df <- cbind(Index = 1:nrow(MLB_movement_df), MLB_movement_df)   
+
+MLB_final_line <- MLB_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+MLB_previous_lines <- MLB_movement_df %>%
+  anti_join(MLB_final_line, by = "Index")
+```
+
+```{r}
+MLB_final_line <- MLB_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(MLB_final_line)[1] <- "away_Final_Line"
+colnames(MLB_final_line)[2] <- "home_Final_Line"
+
+MLB_previous_lines <- MLB_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(MLB_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+MLB_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+NBA_movement_df <- NBA_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NBA_movement_df <- cbind(Index = 1:nrow(NBA_movement_df), NBA_movement_df)   
+
+NBA_final_line <- NBA_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NBA_previous_lines <- NBA_movement_df %>%
+  anti_join(NBA_final_line, by = "Index")
+```
+
+```{r}
+NBA_final_line <- NBA_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NBA_final_line)[1] <- "away_Final_Line"
+colnames(NBA_final_line)[2] <- "home_Final_Line"
+
+NBA_previous_lines <- NBA_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NBA_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NBA_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+NHL_movement_df <- NHL_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NHL_movement_df <- cbind(Index = 1:nrow(NHL_movement_df), NHL_movement_df)   
+
+NHL_final_line <- NHL_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NHL_previous_lines <- NHL_movement_df %>%
+  anti_join(NHL_final_line, by = "Index")
+```
+
+```{r}
+NHL_final_line <- NHL_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NHL_final_line)[1] <- "away_Final_Line"
+colnames(NHL_final_line)[2] <- "home_Final_Line"
+
+NHL_previous_lines <- NHL_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NHL_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NHL_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+compiled_lines <- NFL_previous_lines%>%
+  rbind(NCAAF_previous_lines)
+
+compiled_lines <- compiled_lines %>%
+  rbind(MLB_previous_lines)
+
+compiled_lines <- compiled_lines %>%
+  rbind(NBA_previous_lines)
+
+compiled_lines <- compiled_lines %>%
+  rbind(NHL_previous_lines)
+```
+
+```{r}
+compiled_lines <- compiled_lines %>%
+  mutate("bet_away" = ifelse(ml_away>away_Final_Line, "Yes", "No")) %>%
+  mutate("bet_home" = ifelse(ml_home>home_Final_Line, "Yes", "No"))
+```
+
+```{r}
+save(compiled_lines, file = "compiled_movement_df.rdata")
 ```
 
