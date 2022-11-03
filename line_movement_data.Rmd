@@ -153,12 +153,14 @@ for (id in NHL$id) {
   url = paste(url, game_id, "/oddshistory")
   resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
   resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- do.call(cbind.data.frame, resp_df)
   resp_df <- resp_df %>%
     mutate(id = game_id) %>%
     mutate(league = "nhl")
     NHL_movement_df = rbind(NHL_movement_df, resp_df)
     
     Sys.sleep(1)
+    print(paste("finished game",id))
   }
 
 
@@ -175,10 +177,13 @@ for (id in NBA$id) {
   url = paste(url, game_id, "/oddshistory")
   resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
   resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- do.call(cbind.data.frame, resp_df)
   resp_df <- resp_df %>%
     mutate(id = game_id) %>%
     mutate(league = "nba")
     NBA_movement_df = rbind(NBA_movement_df, resp_df)
+    
+    print(paste("finished game",id))
   }
 
 
@@ -190,7 +195,17 @@ save(NCAAF_movement_df, file = "NCAAF_movement_df.rdata")
 save(MLB_movement_df, file = "MLB_movement_df.rdata")
 ```
 ```{r}
-save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
-save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
+save(NHL_movement_df, file = "ncaaf_2022_df.rdata")
+save(NBA_movement_df, file = "ncaaf_2022_df.rdata")
+```
+
+
+```{r}
+game_id = 107212
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- do.call(cbind.data.frame, resp_df)
 ```
 
