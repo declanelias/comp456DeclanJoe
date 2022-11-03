@@ -209,6 +209,38 @@ compiled_lines <- compiled_lines %>%
 
 compiled_lines <- compiled_lines %>%
   rbind(NHL_previous_lines)
+
+away_compiled <- compiled_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_compiled)[2] <- "money_line"
+colnames(away_compiled)[3] <- "spread"
+colnames(away_compiled)[5] <- "team_total"
+colnames(away_compiled)[6] <- "public_ml"
+colnames(away_compiled)[7] <- "public_spread"
+colnames(away_compiled)[8] <- "public_team_under"
+colnames(away_compiled)[9] <- "public_team_over"
+colnames(away_compiled)[14] <- "Final_line"
+
+away_compiled <- away_compiled %>%
+  mutate(Location = "away")
+
+home_compiled <- compiled_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_compiled)[2] <- "money_line"
+colnames(home_compiled)[3] <- "spread"
+colnames(home_compiled)[5] <- "team_total"
+colnames(home_compiled)[6] <- "public_ml"
+colnames(home_compiled)[7] <- "public_spread"
+colnames(home_compiled)[8] <- "public_team_under"
+colnames(home_compiled)[9] <- "public_team_over"
+colnames(home_compiled)[14] <- "Final_line"
+
+home_compiled <- home_compiled %>%
+  mutate(Location = "home")
+
+
 ```
 
 ```{r}
@@ -218,6 +250,14 @@ compiled_lines <- compiled_lines %>%
 ```
 
 ```{r}
+compiled_lines_split <- away_compiled %>%
+  rbind(home_compiled) %>%
+  mutate("make_bet" = ifelse(Final_line>money_line, "Yes", "No"))
+```
+
+
+```{r}
 save(compiled_lines, file = "compiled_movement_df.rdata")
+save(compiled_lines_split, file = "compiled_movement_split_df.rdata")
 ```
 
