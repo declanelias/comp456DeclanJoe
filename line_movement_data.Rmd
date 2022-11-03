@@ -195,8 +195,8 @@ save(NCAAF_movement_df, file = "NCAAF_movement_df.rdata")
 save(MLB_movement_df, file = "MLB_movement_df.rdata")
 ```
 ```{r}
-save(NHL_movement_df, file = "ncaaf_2022_df.rdata")
-save(NBA_movement_df, file = "ncaaf_2022_df.rdata")
+save(NHL_movement_df, file = "NHL_movement_df.rdata")
+save(NBA_movement_df, file = "NBA_movement_df.rdata")
 ```
 
 
