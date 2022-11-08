@@ -15,6 +15,7 @@ library(vip)
 library(probably) #install.packages('probably')
 tidymodels_prefer()
 conflicted::conflict_prefer("vi", "vip")
+library(rpart.plot)
 
 set.seed(121)
 
@@ -34,6 +35,10 @@ MLB_Full <- MLB_lines_split %>%
 MLB_Full %>%
   group_by(factor(make_bet)) %>%
   summarise(t=n())
+
+MLB_lines_split %>%
+  group_by(book_id) %>%
+  summarise(t = n())
 ```
 
 
@@ -52,7 +57,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total  + book_id + Location, data = MLB_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = MLB_Full, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -101,7 +106,7 @@ logistic_output <- logistic_output %>%
 logistic_output %>%
   ggplot(aes(x = outcome, y = .pred_Yes)) +
   geom_boxplot() + 
-  geom_hline(yintercept = 0.65, color='red') +  # try changing threshold
+  geom_hline(yintercept = 0.60, color='red') +  # try changing threshold
   labs(y = 'Predicted Probability of Outcome', x = 'Observed Outcome') +
   theme_classic()
 ```
@@ -280,3 +285,40 @@ model_output2 %>% vip::vi() %>% head()
 
 ```
 
+## Decision Tree
+
+### Fitting Tree
+
+```{r}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = NULL,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = MLB_Full)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = MLB_Full)
+```
+
+### Visualizing Tree
+
+```{r}
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+
+# Get variable importance metrics 
+# Sum of the goodness of split measures (impurity reduction) for each split for which it was the primary variable.
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance')
+```
