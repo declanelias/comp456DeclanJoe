@@ -1,11 +1,13 @@
 ---
-title: "MLB CLV Analysis"
+title: "NFL CLV Analysis"
 author: "Joe Margolis"
-date: '2022-11-03'
+date: '2022-11-08'
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
 knitr::opts_chunk$set(echo = TRUE)
 
 library(dplyr)
@@ -20,7 +22,7 @@ library(plotly)
 
 set.seed(121)
 
-load("MLB_movement_split_df.rdata")
+load("NFL_movement_split_df.rdata")
 ```
 
 ## Logistic Regression 
@@ -28,30 +30,29 @@ load("MLB_movement_split_df.rdata")
 ### Final Cleaning
 
 ```{r}
-MLB_Full <- MLB_lines_split %>%
+NFL_Full <- NFL_lines_split %>%
   select(-Index, -inserted, -league, -id, -Final_line, -public_team_under) %>%
   mutate(book_id = as.factor(book_id)) %>%
   filter(book_id != "69")%>%
   na.omit()
 
-MLB_Full %>%
+NFL_Full %>%
   group_by(factor(make_bet)) %>%
   summarise(t=n())
     
-MLB_lines_split %>%
+NFL_lines_split %>%
   group_by(book_id) %>%
   summarise(t = n())
 ```
-
 
 ### Model Setting
 
 ```{r}
 # Make sure you set reference level (the outcome you are NOT interested in)
-MLB_Full <- MLB_Full %>%
+NFL_Full <- NFL_Full %>%
   mutate(outcome = relevel(factor(make_bet), ref='No')) #set reference level
 
-MLB_cv10 <- vfold_cv(MLB_Full, v = 10)
+NFL_cv10 <- vfold_cv(NFL_Full, v = 10)
 
 # Logistic Regression Model Spec
 logistic_spec <- logistic_reg() %>%
@@ -59,7 +60,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = MLB_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -69,7 +70,7 @@ log_wf <- workflow() %>%
     add_model(logistic_spec) 
 
 # Fit Model to Training Data
-log_fit <- fit(log_wf, data = MLB_Full)
+log_fit <- fit(log_wf, data = NFL_Full)
 ```
 
 ### Checking Model
@@ -87,18 +88,18 @@ log_fit %>% tidy() %>%
 ### Predicting on all Data
 ```{r}
 # Make soft (probability) predictions
-predict(log_fit, new_data = MLB_Full, type = "prob")
+predict(log_fit, new_data = NFL_Full, type = "prob")
 
 # Make hard (class) predictions (using a default 0.5 probability threshold)
-predict(log_fit, new_data = MLB_Full, type = "class")
+predict(log_fit, new_data = NFL_Full, type = "class")
 ```
 
 ### Predicting on Training Data
 
 ```{r}
 # Soft predictions
-logistic_output <-  MLB_Full %>%
-  bind_cols(predict(log_fit, new_data = MLB_Full, type = 'prob')) 
+logistic_output <-  NFL_Full %>%
+  bind_cols(predict(log_fit, new_data = NFL_Full, type = 'prob')) 
 
 # Hard predictions (you pick threshold)
 logistic_output <- logistic_output %>%
@@ -112,6 +113,7 @@ logistic_output %>%
   labs(y = 'Predicted Probability of Outcome', x = 'Observed Outcome') +
   theme_classic()
 ```
+
 ### Evaluating Model
 
 ```{r}
@@ -144,13 +146,12 @@ autoplot(logistic_roc) + theme_classic()
 # CV Fit Model
 log_cv_fit <- fit_resamples(
     log_wf, 
-    resamples = MLB_cv10,
+    resamples = NFL_cv10,
     metrics = metric_set(sens, yardstick::spec, accuracy, roc_auc),
     control = control_resamples(save_pred = TRUE, event_level = 'second'))  # you need predictions for ROC calculations
 
 collect_metrics(log_cv_fit) #default threshold is 0.5
 ```
-
 
 ## Random Forest Analysis
 
@@ -168,7 +169,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total  + book_id + Location, data = MLB_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total  + book_id + Location, data = NFL_Full)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
@@ -190,11 +191,11 @@ data_wf_mtry6 <- workflow() %>%
 ### Fitting Models
 
 ```{r}
-MLB_Full <- MLB_Full %>%
+NFL_Full <- NFL_Full %>%
   na.omit()
 
 set.seed(121) # make sure to run this before each fit so that you have the same 1000 trees
-data_fit_mtry2 <- fit(data_wf_mtry2, data = MLB_Full)
+data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Full)
 
 ```
 
@@ -202,10 +203,10 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = MLB_Full)
 
 # Fit models for 12, 74, 147
 set.seed(121) 
-data_fit_mtry4 <- fit(data_wf_mtry4, data = MLB_Full)
+data_fit_mtry4 <- fit(data_wf_mtry4, data = NFL_Full)
 
 set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Full)
+data_fit_mtry6 <- fit(data_wf_mtry6, data = NFL_Full)
 ```
 
 ```{r}
@@ -219,9 +220,9 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry4,4, MLB_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
 ```
 
 ### Evaluating Models
@@ -230,9 +231,9 @@ rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry4,4, MLB_Full %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
+    rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
   
 )
 
@@ -258,7 +259,7 @@ data_rf_OOB_output %>%
 data_fit_mtry6
 ```
 ```{r}
-rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)) %>%
+rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 ```
 
@@ -275,9 +276,9 @@ model_output %>% vip::vi() %>% head()
 ```
 
 ```{r}
-model_output2 <- data_wf_mtry12 %>% 
+model_output2 <- data_wf_mtry6 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
-  fit(data = MLB_Full) %>% 
+  fit(data = NFL_Full) %>% 
     extract_fit_engine() 
 
 model_output2 %>% 
@@ -301,14 +302,14 @@ ct_spec <- decision_tree() %>%
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = MLB_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = NFL_Full)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
   add_recipe(data_rec)
 
 fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
-  fit(data = MLB_Full)
+  fit(data = NFL_Full)
 ```
 
 ### Visualizing Tree
