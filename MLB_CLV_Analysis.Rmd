@@ -16,6 +16,7 @@ library(probably) #install.packages('probably')
 tidymodels_prefer()
 conflicted::conflict_prefer("vi", "vip")
 library(rpart.plot)
+library(plotly)
 
 set.seed(121)
 
@@ -30,12 +31,13 @@ load("MLB_movement_split_df.rdata")
 MLB_Full <- MLB_lines_split %>%
   select(-Index, -inserted, -league, -id, -Final_line, -public_team_under) %>%
   mutate(book_id = as.factor(book_id)) %>%
-  filter(book_id != "69")
+  filter(book_id != "69")%>%
+  na.omit()
 
 MLB_Full %>%
   group_by(factor(make_bet)) %>%
   summarise(t=n())
-
+    
 MLB_lines_split %>%
   group_by(book_id) %>%
   summarise(t = n())
@@ -148,6 +150,31 @@ log_cv_fit <- fit_resamples(
 
 collect_metrics(log_cv_fit) #default threshold is 0.5
 ```
+
+## Visualizing
+
+```{r}
+# Create Training and Testing Data Sets
+
+tips$sex <- as.character(tips$sex) # tips represents the data set being used. sex represents the categorical output variable being studied
+set.seed(123)
+tips_split <- initial_split(tips, prop = 3/4)  # Creates a data set with training and testing data <- name comes from data set
+tips_training <- tips_split %>%  # Creates a training data set <- name comes from data set
+  training()
+tips_test <- tips_split %>%  # Creates a testing data set <- name comes from data set
+  testing()
+
+# Helps us create a variable for Table and Gender Combination
+
+train_index <- as.integer(rownames(tips_training))
+test_index <- as.integer(rownames(tips_test))
+tips[train_index,'split'] = 'Training'
+tips[test_index,'split'] = 'Testing'
+tips$Table_Gender <- paste(tips$split,tips$sex) # Remember tips and sex should be interchanged for your data set/question
+```
+
+
+
 
 ## Random Forest Analysis
 
@@ -322,3 +349,4 @@ fit_mod %>%
   extract_fit_engine() %>%
   pluck('variable.importance')
 ```
+
