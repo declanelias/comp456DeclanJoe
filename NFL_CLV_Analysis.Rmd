@@ -19,6 +19,8 @@ tidymodels_prefer()
 conflicted::conflict_prefer("vi", "vip")
 library(rpart.plot)
 library(plotly)
+library(rfviz)
+library(tree.interpreter)
 
 set.seed(121)
 
@@ -31,18 +33,11 @@ load("NFL_movement_split_df.rdata")
 
 ```{r}
 NFL_Full <- NFL_lines_split %>%
-  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under) %>%
-  mutate(book_id = as.factor(book_id)) %>%
-  filter(book_id != "69")%>%
-  na.omit()
+  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) 
 
 NFL_Full %>%
   group_by(factor(make_bet)) %>%
   summarise(t=n())
-    
-NFL_lines_split %>%
-  group_by(book_id) %>%
-  summarise(t = n())
 ```
 
 ### Model Setting
@@ -60,7 +55,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -169,7 +164,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total  + book_id + Location, data = NFL_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NFL_Full)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
@@ -182,9 +177,9 @@ data_wf_mtry4 <- workflow() %>%
   add_model(rf_spec %>% set_args(mtry = 4)) %>%
   add_recipe(data_rec)
 
-data_wf_mtry6 <- workflow() %>%
+"data_wf_mtry6 <- workflow() %>%
   add_model(rf_spec %>% set_args(mtry = 6)) %>%
-  add_recipe(data_rec)
+  add_recipe(data_rec)"
 
 ```
 
@@ -205,8 +200,8 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Full)
 set.seed(121) 
 data_fit_mtry4 <- fit(data_wf_mtry4, data = NFL_Full)
 
-set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = NFL_Full)
+"set.seed(121)
+data_fit_mtry6 <- fit(data_wf_mtry6, data = NFL_Full)"
 ```
 
 ```{r}
@@ -220,7 +215,7 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet))
+#rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet))
 rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet))
 rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
 ```
@@ -231,7 +226,7 @@ rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)),
+    #rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)),
     rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet)),
     rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
   
@@ -259,14 +254,15 @@ data_rf_OOB_output %>%
 data_fit_mtry6
 ```
 ```{r}
-rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)) %>%
+rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
+
 ```
 
 ### Variable Importance
 
 ```{r}
-model_output <-data_fit_mtry6 %>% 
+model_output <-data_fit_mtry4 %>% 
     extract_fit_engine() 
 
 model_output %>% 
@@ -276,7 +272,7 @@ model_output %>% vip::vi() %>% head()
 ```
 
 ```{r}
-model_output2 <- data_wf_mtry6 %>% 
+model_output2 <- data_wf_mtry4 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
   fit(data = NFL_Full) %>% 
     extract_fit_engine() 
@@ -289,6 +285,30 @@ model_output2 %>% vip::vi() %>% head()
 
 ```
 
+
+```{r}
+NFL_Full <- NFL_Full %>%
+  select(-public_ml, -public_spread, -public_team_over)
+```
+```{r}
+NFL_Full <- NFL_Full %>%
+  select(-outcome)
+```
+
+```{r}
+
+NFL_Train <- NFL_Full%>%
+  select(-make_bet)
+
+NFL_Test <- NFL_Full %>%
+  select(make_bet)
+```
+
+
+```{r}
+TidyForest <- tidyRF(model_output, NFL_Train, NFL_Test)
+```
+
 ## Decision Tree
 
 ### Fitting Tree
@@ -296,13 +316,13 @@ model_output2 %>% vip::vi() %>% head()
 ```{r}
 ct_spec <- decision_tree() %>%
   set_engine(engine = 'rpart') %>%
-  set_args(cost_complexity = NULL,  #default is 0.01 (used for pruning a tree)
+  set_args(cost_complexity = 0.005,  #default is 0.01 (used for pruning a tree)
            min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
            tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = NFL_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location , data = NFL_Full)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
@@ -325,5 +345,22 @@ fit_mod %>%
 fit_mod %>%
   extract_fit_engine() %>%
   pluck('variable.importance')
+```
+
+```{r}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NFL_Full, type = "class")
+```
+
+```{r}
+table_mat <- table(NFL_Full$make_bet, prediction$.pred_class)
+table_mat
+```
+```{r}
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+
+accuracy_Test
+sens_Test
 ```
 
