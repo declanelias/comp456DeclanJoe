@@ -164,7 +164,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NFL_Full)
+data_rec <- recipe(make_bet ~ spread + total + team_total + Location, data = NFL_Full)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
