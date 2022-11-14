@@ -1,0 +1,54 @@
+---
+title: 'Taking the Sports out of Sports Gambling: Arbitrage and Expected Value Betting'
+author: "Joe Margolis and Declan Elias"
+date: '2022-11-14'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(tidymodels)
+library(vip)
+library(probably) #install.packages('probably')
+tidymodels_prefer()
+conflicted::conflict_prefer("vi", "vip")
+library(rpart.plot)
+library(plotly)
+library(rfviz)
+library(tree.interpreter)
+```
+
+## Introduction
+
+### Topic
+
+A rapid occurrence across the United States that is currently taking place is the continuous legalization of sports gambling passing through state governments. With 30 states already passing laws allowing sports betting, the business itself has exploded as it has even become a major area of investment for the sports franchises themselves, as they open up books in stadiums and partnerships with books are being put in place. This rapid growth in influence of sports betting, along with Declan Elias and my interests in statistical analysis and sports in general is the reason why we have decided to explore this topic in this report.
+
+### Research Questions
+
+Our research questions revolve around finding two ways to maximize expected value of betting, and doing so in a way to where over time a gambler can actually expect to slowly earn a profit. The idea is treating sports gambling more like stock trade as opposed to game, finding comparisons within games and books in order to place bets with opportunity for slow success.
+
+#### Expected Value Across Books
+
+The first way we attempt to profit off of expected value is by comparing a certain game across books. There are hundreds of books out there, and while there is plenty of model sharing and line sharing amongst them, there are still many instances where books produce different lines for the same game. With this in mind we are attempting to put together a model that weighs the success of each book differently based on their history, and use that to set a "gold standard" line for any particular game. This would hopefully allow us to have a consistent baseline model that we can count as an even expected value, and then compare book lines to that model to see which books can give us a positive expected value.
+
+#### Expected Value As Lines Move
+
+The other way we are investigating in order to leverage expected value betting is through the way that lines can change within a given book. In many sports, particularly sports like football which only play once a week, we can notice an abundance of changes in the lines a book offers from the first line they set up until game time, when the book has the most knowledge. Books will try to adjust lines in order to end up with as close to a 50/50 split on all bets from the public. What we are attempting with this is to model how these lines tend to move, leading to a classification output where we decide if a given line is going to be better or worse than its closing value, allowing a gambler to decide if a current bet is a good idea.
+
+## Data 
+
+## Predicting For Closing Line Value
+
+### Major League Baseball (MLB)
+
+### National Football League (NFL)
+
+```{r}
+set.seed(121)
+load("NFL_movement_split_df.rdata")
+```
+
