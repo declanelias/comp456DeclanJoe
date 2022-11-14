@@ -19,6 +19,7 @@ library(rpart.plot)
 library(plotly)
 library(rfviz)
 library(tree.interpreter)
+library(kableExtra)
 ```
 
 ## Introduction
@@ -50,5 +51,124 @@ The other way we are investigating in order to leverage expected value betting i
 ```{r}
 set.seed(121)
 load("NFL_movement_split_df.rdata")
+NFL_Full <- NFL_lines_split %>%
+  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) 
 ```
 
+#### Logistic Analysis
+
+##### Model Setting
+
+```{r}
+# Make sure you set reference level (the outcome you are NOT interested in)
+NFL_Full <- NFL_Full %>%
+  mutate(outcome = relevel(factor(make_bet), ref='No')) #set reference level
+
+NFL_cv10 <- vfold_cv(NFL_Full, v = 10)
+
+# Logistic Regression Model Spec
+logistic_spec <- logistic_reg() %>%
+    set_engine('glm') %>%
+    set_mode('classification')
+
+# Recipe
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
+    step_normalize(all_numeric_predictors()) %>% 
+    step_dummy(all_nominal_predictors())
+
+# Workflow (Recipe + Model)
+log_wf <- workflow() %>% 
+    add_recipe(logistic_rec) %>%
+    add_model(logistic_spec) 
+
+# Fit Model to Training Data
+log_fit <- fit(log_wf, data = NFL_Full)
+```
+
+##### Checking Model
+
+```{r}
+# Print out Coefficients
+log_fit %>% tidy() %>%
+  kbl(caption = "Logistic Model Coefficients") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+# Get Exponentiated coefficients + CI
+log_fit %>% tidy() %>%
+  mutate(OR.conf.low = exp(estimate - 1.96*std.error), OR.conf.high = exp(estimate + 1.96*std.error)) %>% # do this first
+  mutate(OR = exp(estimate)) %>%
+  kbl(caption = "Logistic Model Exponentiated Coefficients and Confidence Interval") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+##### Making Predictions 
+
+```{r, results='hide'}
+# Make soft (probability) predictions
+predict(log_fit, new_data = NFL_Full, type = "prob")
+
+# Make hard (class) predictions (using a default 0.5 probability threshold)
+predict(log_fit, new_data = NFL_Full, type = "class")
+```
+
+##### Training Data Predictions
+
+```{r, warning=FALSE}
+# Soft predictions
+logistic_output <-  NFL_Full %>%
+  bind_cols(predict(log_fit, new_data = NFL_Full, type = 'prob')) 
+
+# Hard predictions (you pick threshold)
+logistic_output <- logistic_output %>%
+  mutate(.pred_class = make_two_class_pred(.pred_No, levels(outcome), threshold = .60)) #Try changing threshold (.5, 0, 1, .2, .8)
+
+# Visualize Soft Predictions
+logistic_output %>%
+  ggplot(aes(x = outcome, y = .pred_Yes)) +
+  geom_boxplot() + 
+  geom_hline(yintercept = 0.60, color='red') +  # try changing threshold
+  labs(y = 'Predicted Probability of Outcome', x = 'Observed Outcome') +
+  theme_classic()
+```
+
+##### Evaluating Model
+
+```{r}
+# Confusion Matrix
+conf <- logistic_output %>%
+  conf_mat(truth = outcome, estimate = .pred_class)
+
+log_metrics <- metric_set(sens, yardstick::spec, accuracy) # these metrics are based on hard predictions
+
+#sens: sensitivity = chance of correctly predicting second level, given second level (Yes)
+#spec: specificity = chance of correctly predicting first level, given first level (No)
+#accuracy: accuracy = chance of correctly predicting outcome
+
+logistic_output %>% 
+  log_metrics(estimate = .pred_class, truth = outcome, event_level = "second")  %>%
+  kbl(caption = "Logistic Model Metric Results") %>%
+  kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+```
+
+##### ROC Curve
+
+```{r}
+logistic_roc <- logistic_output %>% 
+    roc_curve(outcome, .pred_Yes, event_level = "second") # set second level of outcome as "success"
+
+autoplot(logistic_roc) + theme_classic()
+```
+##### CV Evaluation of Model
+
+```{r}
+# CV Fit Model
+log_cv_fit <- fit_resamples(
+    log_wf, 
+    resamples = NFL_cv10,
+    metrics = metric_set(sens, yardstick::spec, accuracy, roc_auc),
+    control = control_resamples(save_pred = TRUE, event_level = 'second'))  # you need predictions for ROC calculations
+
+collect_metrics(log_cv_fit) %>% #default threshold is 0.5
+  kbl(caption = "Logistic Model Metric CV Fold Test Results") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
