@@ -46,6 +46,145 @@ The other way we are investigating in order to leverage expected value betting i
 
 ## Data 
 
+
+## Expected Value Accross Books
+
+### Distribution of Implied Win Probability
+
+```{r warning=FALSE}
+load("consensus_data.rdata")
+
+create_ml_prob_hist = function(league) {
+  return(
+    consensus_data %>%
+      filter(league_name == league) %>%
+      filter(book_id == 30) %>%
+      ggplot(aes(x = ml_home_implied_prob)) +
+      geom_histogram(binwidth = .02) +
+      theme_minimal() +
+      labs(title = paste("Home Money Line in", toupper(league)), xlab = "Implied Probability",
+           x = "Implied Home Win Probability",
+           y = "Count")
+  )
+}
+
+grid.arrange(create_ml_prob_hist("mlb"),
+             create_ml_prob_hist("nba"),
+             create_ml_prob_hist("ncaab"),
+             create_ml_prob_hist("nhl"),
+             create_ml_prob_hist("nfl"),
+             create_ml_prob_hist("ncaaf"),
+             nrow = 3)
+```
+
+This plot shows the distribution of the implied home win probability. In the MLB and NHL we see a relatively normal distribution, however, with the NFL and NBA, we see slightly less normality. In the two college leagues, we do not see a normal distribution.
+
+### Reliability Plot
+
+```{r}
+ml_data = consensus_data %>%
+  filter(book_id == 30,
+         !is.na(winning_team_id),
+         !is.na(ml_home_implied_prob)) %>%
+  select(id, away_team_id, home_team_id, winning_team_id, league_name, season, ml_away, ml_home, ml_home_implied_prob, ml_away_implied_prob) %>%
+  mutate(home_team_win = if_else(winning_team_id == home_team_id, TRUE, FALSE))
+
+ml_data_by_sport = ml_data %>%
+  group_by(league_name) %>%
+  mutate(bins = cut_number(ml_home_implied_prob, 10)) %>%
+  ungroup()
+  
+ml_data_by_sport %>%
+  group_by(league_name, bins) %>%
+  summarise(x = mean(ml_home_implied_prob),
+            
+            y = mean(home_team_win),
+            n = n()) %>%
+  ggplot(aes(x=x, y=y, color=league_name)) +
+  geom_abline(slope = 1, color = "black", lty = 2) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~league_name) +
+  theme_bw() +
+  labs(title = "Consensus Home Implied Win Probability Vs. True Win Probability", x = "Implied Home Win Probability", y = "True Home Win Probability")
+```
+
+This graph shows the implied win probability vs. true win probability for the 6 leagues. In general, the books are very good at accurately predicting the outcome of the games.
+
+
+```{r}
+ml_data %>%
+  group_by(bins, season) %>%
+  summarise(x = mean(ml_home_implied_prob),
+            y = mean(home_team_win),
+            n = n()) %>%
+  ggplot(aes(x=x, y=y, color=season)) +
+  geom_abline(slope = 1, color = "black", lty = 2) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~season) +
+  theme_bw() +
+  labs(title = "Consensus Home Implied Win Probability Vs. True Win Probability", x = "Implied Home Win Probability", y = "True Home Win Probability")
+```
+
+This graph shows the implied win probability vs. true win probability over time. There is no descernable trend based on year.
+
+### Looking at Individual Books
+
+#### How Data Set Is Created
+```{r eval=FALSE, include=TRUE}
+load("betting_data.rdata")
+ml_data_all = betting_data %>%
+  select(id, away_team_id, home_team_id, winning_team_id, league_name, season, ml_away, ml_home, ml_home_implied_prob, ml_away_implied_prob, book_id) %>%
+  filter(!is.na(winning_team_id),
+         !is.na(ml_home_implied_prob))
+
+ml_data_all = ml_data_all %>%
+  mutate(home_team_win = if_else(winning_team_id == home_team_id, TRUE, FALSE)) %>%
+  mutate(favorite_win_prob = pmax(ml_home_implied_prob, ml_away_implied_prob),
+         favorite_home = if_else(favorite_win_prob == ml_home_implied_prob, T, F),
+         favorite_win = if_else((favorite_home & home_team_win) | (!favorite_home & !home_team_win), T, F),
+         brier_score = (favorite_win_prob - favorite_win) ^ 2 + (1 - favorite_win_prob - !favorite_win)^2)
+
+rm(betting_data)
+```
+
+
+```{r warning=FALSE}
+load("ml_data_all.rdata")
+
+brier_data = ml_data_all %>%
+  group_by(league_name, book_id) %>%
+  summarise(brier_score = mean(brier_score),
+            n = n())
+
+brier_ref = brier_data %>%
+  group_by(league_name) %>%
+  summarise(brier_score = mean(brier_score))
+
+get_brier_ss = function(this.league_name, brier_score) {
+  ref_score = brier_ref %>%
+    filter(league_name == this.league_name)
+  
+  return(1 -  brier_score / ref_score$brier_score)
+}
+
+brier_data = brier_data %>%
+  group_by(league_name, book_id) %>%
+  mutate(brier_skill_score = get_brier_ss(league_name, brier_score)) %>% 
+  ungroup()
+
+brier_data %>%
+  ggplot(aes(x = brier_skill_score, color = league_name)) +
+  geom_histogram(binwidth = .01) +
+  facet_wrap(~league_name) + 
+  theme_minimal() +
+  labs(x = "Brier Skill Score", y = "Count", title = "Distribution of Books When Compared To The Average")
+```
+
+This graphic shows how the distribution of how the books perform compared to the average. A Brier Skill Score ($1 - \frac{BS_{average}}{BS_{book}}$) below 0 indicates a book performance is below average, a score above 0 indicates a performance above average. 
+
+
 ## Predicting For Closing Line Value
 
 ### Major League Baseball (MLB)

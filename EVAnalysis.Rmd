@@ -1,0 +1,588 @@
+---
+title: "EV Analysis"
+output: html_document
+date: '2022-11-02'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+
+# Don't Need to do this, just need to load betting_data.rdata
+
+```{r}
+line.to.prob = function(line) {
+  
+  if_else(line < 0,
+          abs(line) / (abs(line) + 100) * 100,
+          100 / (line + 100) * 100)
+  
+}
+
+implied.prob = function(line1, line2) {
+  prob1 = line.to.prob(line1)
+  prob2 = line.to.prob(line2)
+  
+  return(prob1 / (prob1 + prob2))
+}
+
+
+betting_data = betting_data %>%
+  filter(is.na(draw)) %>%
+  mutate(ml_home_implied_prob = implied.prob(ml_home, ml_away),
+         ml_away_implied_prob = implied.prob(ml_away, ml_home),
+         spread_away_line_implied_prob = implied.prob(spread_away_line, spread_home_line),
+         spread_home_line_inmplied_prob = implied.prob(spread_home_line, spread_away_line),
+         over_implied_prob = implied.prob(over, under),
+         under_implied_prob = implied.prob(under, over),
+         away_over_implied_prob = implied.prob(away_over, away_under),
+         away_under_implied_prob = implied.prob(away_under, away_over),
+         home_over_implied_prob = implied.prob(home_over, home_under),
+         home_under_implied_prob = implied.prob(home_under, home_over))
+
+consensus_data = consensus_data %>%
+  filter(is.na(draw)) %>%
+  mutate(ml_home_implied_prob = implied.prob(ml_home, ml_away),
+         ml_away_implied_prob = implied.prob(ml_away, ml_home),
+         spread_away_line_implied_prob = implied.prob(spread_away_line, spread_home_line),
+         spread_home_line_inmplied_prob = implied.prob(spread_home_line, spread_away_line),
+         over_implied_prob = implied.prob(over, under),
+         under_implied_prob = implied.prob(under, over),
+         away_over_implied_prob = implied.prob(away_over, away_under),
+         away_under_implied_prob = implied.prob(away_under, away_over),
+         home_over_implied_prob = implied.prob(home_over, home_under),
+         home_under_implied_prob = implied.prob(home_under, home_over))
+  
+
+
+
+head(betting_data)
+
+
+save(betting_data, file = "betting_data.rdata")
+save(consensus_data, file = "consensus_data.rdata")
+```
+
+# Load the data frame
+```{r}
+load("betting_data.rdata")
+load("consensus_data.rdata")
+```
+
+# Plot home moneyline data
+```{r}
+consensus_data %>%
+  filter(book_id == 30) %>%
+  ggplot(aes(x = ml_home_implied_prob)) +
+  geom_histogram() +
+  theme_minimal() +
+  labs(title = "Home Money Line", xlab = "Implied Probability")
+
+consensus_data %>%
+    filter(league_name == "mlb") %>%
+    filter(book_id == 30) %>%
+    ggplot(aes(x = ml_home_implied_prob)) +
+    geom_histogram() +
+    theme_minimal() +
+    labs(title = "Home Money Line in MLB", xlab = "Implied Probability")
+
+consensus_data %>%
+    filter(league_name == "nfl") %>%
+    filter(book_id == 30) %>%
+    ggplot(aes(x = ml_home_implied_prob)) +
+    geom_histogram() +
+    theme_minimal() +
+    labs(title = "Home Money Line in NFL", xlab = "Implied Probability")
+  
+consensus_data %>%
+    filter(league_name == "ncaaf") %>%
+    filter(book_id == 30) %>%
+    ggplot(aes(x = ml_home_implied_prob)) +
+    geom_histogram() +
+    theme_minimal() +
+    labs(title = "Home Money Line in NCAA Football", xlab = "Implied Probability")
+  
+consensus_data %>%
+    filter(league_name == "nba") %>%
+    filter(book_id == 30) %>%
+    ggplot(aes(x = ml_home_implied_prob)) +
+    geom_histogram() +
+    theme_minimal() +
+    labs(title = "Home Money Line in NBA", xlab = "Implied Probability")
+
+consensus_data %>%
+    filter(league_name == "nhl") %>%
+    filter(book_id == 30) %>%
+    ggplot(aes(x = ml_home_implied_prob)) +
+    geom_histogram() +
+    theme_minimal() +
+    labs(title = "Home Money Line in NHL", xlab = "Implied Probability")
+
+consensus_data %>%
+    filter(league_name == "ncaab") %>%
+    filter(book_id == 30) %>%
+    ggplot(aes(x = ml_home_implied_prob)) +
+    geom_histogram() +
+    theme_minimal() +
+    labs(title = "Home Money Line in NCAAB", xlab = "Implied Probability")
+```
+
+## NCAAF Implied Probability by Year
+
+```{r}
+consensus_data %>%
+  filter(league_name == "ncaaf",
+         season == 2017,
+         book_id == 30) %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability in 2017", xlab = "Spread Implied Porbability")
+
+consensus_data %>%
+  filter(league_name == "ncaaf",
+         season == 2018,
+         book_id == 30) %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability in 2018", xlab = "Spread Implied Porbability")
+
+consensus_data %>%
+  filter(league_name == "ncaaf",
+         season == 2019,
+         book_id == 30) %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability in 2019", xlab = "Spread Implied Porbability")
+
+consensus_data %>%
+  filter(league_name == "ncaaf",
+         season == 2020,
+         book_id == 30) %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability in 2020", xlab = "Spread Implied Porbability")
+
+consensus_data %>%
+  filter(league_name == "ncaaf",
+         season == 2021,
+         book_id == 30) %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability in 2021", xlab = "Spread Implied Porbability")
+
+
+```
+
+
+# Looking at Spread Implied Probability
+
+```{r}
+
+betting_data %>%
+  filter(league_name == "mlb") %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "MLB Home Spread Implied Probability", xlab = "Spread Implied Porbability")
+
+betting_data %>%
+  filter(league_name == "nba",
+         book_id == 3) %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NBA Home Spread Implied Probability", xlab = "Spread Implied Porbability")
+
+betting_data %>%
+  filter(league_name == "ncaaf") %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability", xlab = "Spread Implied Porbability")
+
+betting_data %>%
+  filter(league_name == "nhl") %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NHL Home Spread Implied Probability", xlab = "Spread Implied Porbability")
+
+betting_data %>%
+  filter(league_name == "nfl") %>%
+  ggplot(aes(x = spread_home_line_inmplied_prob)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NFL Home Spread Implied Probability", xlab = "Spread Implied Porbability")
+
+
+```
+
+
+
+
+# Looking at Spreads
+
+```{r}
+
+betting_data %>%
+  filter(league_name == "mlb") %>%
+  ggplot(aes(x = spread_home)) +
+  geom_histogram(bins = 1000) + 
+  theme_minimal() +
+  labs(title = "MLB Home Spread Implied Probability", xlab = "Home Spread")
+
+betting_data %>%
+  filter(league_name == "nba",
+         book_id == 3) %>%
+  ggplot(aes(x = spread_home)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NBA Home Spread Implied Probability", xlab = "Home Spread")
+
+betting_data %>%
+  filter(league_name == "ncaaf") %>%
+  ggplot(aes(x = spread_home)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NCAA Football Home Spread Implied Probability", xlab = "Home Spread")
+
+betting_data %>%
+  filter(league_name == "nhl") %>%
+  ggplot(aes(x = spread_home)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NHL Home Spread Implied Probability", xlab = "Home Spread")
+
+betting_data %>%
+  filter(league_name == "nfl") %>%
+  ggplot(aes(x = spread_home)) +
+  geom_histogram(bins = 100) + 
+  theme_minimal() +
+  labs(title = "NFL Home Spread Implied Probability", xlab = "Home Spread")
+
+consensus_data %>%
+  filter()
+```
+
+
+
+```{r}
+head(ml_data, 1000)
+```
+
+
+# Reliability Analysis
+
+
+## Clean the data by creating a data set for money line based on the consensus
+
+```{r}
+ml_data = consensus_data %>%
+  filter(book_id == 30,
+         !is.na(winning_team_id),
+         !is.na(ml_home_implied_prob)) %>%
+  select(id, away_team_id, home_team_id, winning_team_id, league_name, season, ml_away, ml_home, ml_home_implied_prob, ml_away_implied_prob) %>%
+  mutate(home_team_win = if_else(winning_team_id == home_team_id, TRUE, FALSE))
+
+# create categorical variable for the bins that each game falls into based on the implied probability
+ml_data_overall = ml_data %>%
+  mutate(bins = cut_number(ml_home_implied_prob, 10))
+
+ml_data_by_sport = ml_data %>%
+  group_by(league_name) %>%
+  mutate(bins = cut_number(ml_home_implied_prob, 10)) %>%
+  ungroup()
+```
+
+
+## Creating data for reliability plot
+
+```{r}
+ml_data_overall %>%
+  group_by(bins) %>%
+  summarise(x = mean(ml_home_implied_prob),
+            y = mean(home_team_win),
+            n = n()) %>%
+  ggplot(aes(x = x, y = y)) + 
+  geom_point(color = "blue") +
+  geom_line(color = "blue") + 
+  geom_abline(slope = 1, lty = 2) +
+  theme_minimal() +
+  labs(title = "Consensus Home Implied Win Probability Vs. True Win Probability", x = "Implied Home Win Probability", y = "True Home Win Probability")
+
+ ml_data_by_sport %>%
+  group_by(league_name, bins) %>%
+  summarise(x = mean(ml_home_implied_prob),
+            
+            y = mean(home_team_win),
+            n = n()) %>%
+  ggplot(aes(x=x, y=y, color=league_name)) +
+  geom_abline(slope = 1, color = "black", lty = 2) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~league_name) +
+  theme_bw() +
+  labs(title = "Consensus Home Implied Win Probability Vs. True Win Probability", x = "Implied Home Win Probability", y = "True Home Win Probability")
+
+ml_data_overall %>%
+  group_by(bins, season) %>%
+  summarise(x = mean(ml_home_implied_prob),
+            y = mean(home_team_win),
+            n = n()) %>%
+  ggplot(aes(x=x, y=y, color=season)) +
+  geom_abline(slope = 1, color = "black", lty = 2) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~season) +
+  theme_bw() +
+  labs(title = "Consensus Home Implied Win Probability Vs. True Win Probability", x = "Implied Home Win Probability", y = "True Home Win Probability")
+
+ml_data %>%
+  filter(league_name == "nfl") %>%
+  group_by(season) %>%
+  mutate(bins = cut_number(ml_home_implied_prob, 10)) %>%
+  ungroup() %>%
+  group_by(bins, season) %>%
+  summarise(x = mean(ml_home_implied_prob),
+            y = mean(home_team_win),
+            n = n()) %>%
+  ggplot(aes(x=x, y=y, color=season)) +
+  geom_abline(slope = 1, color = "black", lty = 2) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~season) +
+  theme_bw() +
+  labs(title = "Consensus Home Implied Win Probability Vs. True Win Probability NFL", x = "Implied Home Win Probability", y = "True Home Win Probability")
+```
+
+## How often does the consensus get the game right?
+
+```{r}
+# Overall
+ml_data_overall = ml_data_overall %>%
+   mutate(favorite_win_prob = pmax(ml_home_implied_prob, ml_away_implied_prob),
+         favorite_home = if_else(favorite_win_prob == ml_home_implied_prob, T, F),
+         favorite_win = if_else((favorite_home & home_team_win) | (!favorite_home & !home_team_win), T, F)) 
+
+ml_data_overall %>%
+  group_by(league_name) %>%
+  summarise(favorite_win = mean(favorite_win),
+            favorite_win_probability = mean(favorite_win_prob))
+
+head(ml_data_overall)
+
+# Looking at Brier Score
+ml_data_overall %>%
+  mutate(brier_score = (favorite_win_prob - favorite_win) ^ 2 + (1 - favorite_win_prob - !favorite_win)^2) %>%
+  group_by(league_name) %>%
+  summarise(brier_score = mean(brier_score))
+```
+
+# Looking by book
+
+
+```{r}
+ml_data_all = betting_data %>%
+  select(id, away_team_id, home_team_id, winning_team_id, league_name, season, ml_away, ml_home, ml_home_implied_prob, ml_away_implied_prob, book_id) %>%
+  filter(!is.na(winning_team_id),
+         !is.na(ml_home_implied_prob))
+
+ml_data_all = ml_data_all %>%
+  filter(book_id != 15,
+         book_id != 30) %>%
+  mutate(home_team_win = if_else(winning_team_id == home_team_id, TRUE, FALSE)) %>%
+  mutate(favorite_win_prob = pmax(ml_home_implied_prob, ml_away_implied_prob),
+         favorite_home = if_else(favorite_win_prob == ml_home_implied_prob, T, F),
+         favorite_win = if_else((favorite_home & home_team_win) | (!favorite_home & !home_team_win), T, F),
+         brier_score = (favorite_win_prob - favorite_win) ^ 2 + (1 - favorite_win_prob - !favorite_win)^2)
+
+ml_data_all = ml_data_all %>%
+  filter(book_id != 30)
+
+# OVerall
+brier_data = ml_data_all %>%
+  group_by(league_name, book_id) %>%
+  summarise(brier_score = mean(brier_score),
+            n = n())
+
+brier_data
+
+brier_ref = brier_data %>%
+  group_by(league_name) %>%
+  summarise(brier_score = mean(brier_score))
+
+get_brier_ss = function(this.league_name, brier_score) {
+  ref_score = brier_ref %>%
+    filter(league_name == this.league_name)
+  
+  return(1 -  brier_score / ref_score$brier_score)
+}
+  
+
+brier_data = brier_data %>%
+  group_by(league_name, book_id) %>%
+  mutate(brier_skill_score = get_brier_ss(league_name, brier_score)) %>% 
+  ungroup()
+
+save(ml_data_all, file = "ml_data_all.rdata")
+load("ml_data_all.rdata")
+```
+
+
+```{r}
+brier_data %>%
+  ggplot(aes(x = brier_skill_score, color = league_name)) +
+  geom_histogram() +
+  facet_wrap(~league_name) + 
+  theme_classic()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+ml_data_all %>%
+  group_by(favorite_win) %>%
+  ggplot(aes(x = favorite_win_prob, color = favorite_win)) + 
+  geom_histogram()
+
+head(ml_data_all)
+```
+
+```{r}
+ml_data_all %>% 
+  filter(book_id == 3) %>%
+  mutate(winning_team_prob = if_else(home_team_win, ml_home_implied_prob, ml_away_implied_prob),
+         losing_team_prob = if_else(home_team_win, ml_away_implied_prob, ml_home_implied_prob),
+         winning_bins = cut(winning_team_prob, breaks = c(0:100) / 100),
+         losing_bins = cut(losing_team_prob, breaks = c(0:100) / 100))
+
+ml_data_all %>%
+  group_by(winning_bins) %>%
+  summarise(n() / )
+  
+
+```
+
+
+
+
+```{r}
+brier_data
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Determining the Expected Value
+Using NCAAF first
+## 1) Using a weighted average
+
+```{r}
+ml_data_all %>%
+  filter(league_name == "ncaaf")
+```
+
+
+```{r}
+library(tidymodels)
+library(probably)
+
+tidymodels_prefer()
+
+
+avg_ml_data_ncaaf = ml_data_all %>%
+  filter(league_name == "ncaaf") %>%
+  group_by(id) %>%
+  summarise(ml_away = mean(ml_away),
+            ml_home = mean(ml_home),
+            favorite_implied_prob = mean(favorite_win_prob),
+            underdog_implied_prob = 1 - favorite_implied_prob,
+            season = mean(season),
+            favorite_win = if_else(mean(favorite_win) > .5, TRUE, FALSE)) %>%
+  mutate(win_prob = if_else(favorite_win, favorite_implied_prob, underdog_implied_prob))
+
+
+win_data = rbind(
+  avg_ml_data_ncaaf %>%
+    select(win_prob) %>%
+    mutate(win_prob = 1 - win_prob,
+           outcome = "loss"), 
+    avg_ml_data_ncaaf %>%
+      select(win_prob) %>%
+      mutate(outcome = "win"))
+
+win_data = win_data %>%
+  mutate(predict_win = if_else(win_prob > .5, "win", "loss"))
+
+win_data %>%
+ conf_mat(truth = outcome, estimate = predict_win)
+
+log_metrics <- metric_set(sens, yardstick::spec, accuracy)
+win_data %>% 
+  log_metrics(estimate = as.factor(predict_win), truth = as.factor(outcome), event_level = "second")
+```
+
