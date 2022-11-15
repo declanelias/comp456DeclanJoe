@@ -68,10 +68,13 @@ create_ml_prob_hist = function(league) {
   )
 }
 
-load("MLB_movement_split_df.rdata")
-MLB_Full <- MLB_lines_split %>%
-  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) %>%
-  na.omit()
+grid.arrange(create_ml_prob_hist("mlb"),
+             create_ml_prob_hist("nba"),
+             create_ml_prob_hist("ncaab"),
+             create_ml_prob_hist("nhl"),
+             create_ml_prob_hist("nfl"),
+             create_ml_prob_hist("ncaaf"),
+             nrow = 3)
 ```
 
 This plot shows the distribution of the implied home win probability. In the MLB and NHL we see a relatively normal distribution, however, with the NFL and NBA, we see slightly less normality. In the two college leagues, we do not see a normal distribution.
@@ -91,7 +94,7 @@ ml_data_by_sport = ml_data %>%
   mutate(bins = cut_number(ml_home_implied_prob, 10)) %>%
   ungroup()
   
-ml_data_by_sport %>%
+p2 = ml_data_by_sport %>%
   group_by(league_name, bins) %>%
   summarise(x = mean(ml_home_implied_prob),
             
@@ -110,7 +113,7 @@ This graph shows the implied win probability vs. true win probability for the 6 
 
 
 ```{r}
-ml_data_by_sport %>%
+p1 = ml_data %>%
   group_by(bins, season) %>%
   summarise(x = mean(ml_home_implied_prob),
             y = mean(home_team_win),
@@ -182,7 +185,39 @@ brier_data %>%
 This graphic shows how the distribution of how the books perform compared to the average. A Brier Skill Score ($1 - \frac{BS_{average}}{BS_{book}}$) below 0 indicates a book performance is below average, a score above 0 indicates a performance above average. 
 
 
+```{r}
+brier_data %>%
+  filter(league_name == "ncaaf") %>%
+  arrange((brier_skill_score))
+
+
+ml_data_all %>%
+  filter(book_id == 55 | book_id == 60,
+         league_name == "ncaaf") %>%
+  mutate(winning_team_prob = if_else(home_team_win, ml_home_implied_prob, ml_away_implied_prob),
+         losing_team_prob = if_else(home_team_win, ml_away_implied_prob, ml_home_implied_prob)) %>%
+  ggplot(aes(x = winning_team_prob, group = book_id, color = as.factor(book_id))) +
+  geom_density(adjust=3) +
+  geom_density(aes(x = losing_team_prob), adjust=3) +
+  labs(x = "Win / Loss Probability") + 
+  theme_minimal()
+
+ml_data_all %>%
+  filter(book_id == 60,
+         league_name == "ncaaf") %>%
+  mutate(winning_team_prob = if_else(home_team_win, ml_home_implied_prob, ml_away_implied_prob),
+         losing_team_prob = if_else(home_team_win, ml_away_implied_prob, ml_home_implied_prob)) %>%
+  ggplot(aes(x = winning_team_prob)) +
+  geom_density(adjust=3, color = "green") +
+  geom_density(aes(x = losing_team_prob), adjust=3, color = "red") +
+  theme_minimal()
+```
+
+This plot shows the densities of win / loss probabilities for the best performing and worst performing books (60 and 55 respectively).
+
 ## Predicting For Closing Line Value
+
+### Major League Baseball (MLB)
 
 ### National Football League (NFL)
 
@@ -511,13 +546,3 @@ table_mat %>%
 ```
 
 This table displays the confusion matrix for the decision tree above. It is important to note that, although this is supposed to give some sort of visual interpretation of what may be going on inside of the random forests model, the heavy pruning has left this tree with a much lower accuracy of about 0.61 and a sensitivity of about 0.63. In addition this decision tree runs closer to the logistic model than the random forest in the sense that the decision tree model is much less likely to predict that one should bet on the game than to say to avoid it.
-
-## Next Steps
-
-### Closing Line Value Next Steps
-
-Currently we are working to double check the results of the random forest model for the NFL. The accuracy and sensitivity results were staggeringly good, so we are investigating to make sure there are not any leaks in the data that making our predictions unreasonably good.
-
-Following that investigation, if all works out the next goal will be to try to make our random forest interpretable. We have found a package called rfviz which is meant to visualize random forests along will turning a random forest into a model that looks similar to a logistic model output, using variable importance to produce coefficients. This is an important step to allowing people to actually use our models in the future on real life games.
-
-Finally, after wrapping up the NFL the next step will be to apply these methods to other sports. Particularly data is already available for us in NCAA football, MLB, NHL, and NBA.
