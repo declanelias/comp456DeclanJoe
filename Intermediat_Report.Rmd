@@ -5,8 +5,8 @@ date: '2022-11-14'
 output: 
   html_document:
     toc: true
-    toc_float:
-      toc_collapsed: true
+    toc_float: true
+    theme: cerulean
 ---
 
 ```{r setup, include=FALSE}
@@ -250,8 +250,6 @@ rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
 ```
 
 ##### Evaluating Models
-
-### Evaluating Models
 
 ```{r}
 # Evaluate OOB Metrics
