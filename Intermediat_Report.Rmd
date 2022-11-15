@@ -511,3 +511,13 @@ table_mat %>%
 ```
 
 This table displays the confusion matrix for the decision tree above. It is important to note that, although this is supposed to give some sort of visual interpretation of what may be going on inside of the random forests model, the heavy pruning has left this tree with a much lower accuracy of about 0.61 and a sensitivity of about 0.63. In addition this decision tree runs closer to the logistic model than the random forest in the sense that the decision tree model is much less likely to predict that one should bet on the game than to say to avoid it.
+
+## Next Steps
+
+### Closing Line Value Next Steps
+
+Currently we are working to double check the results of the random forest model for the NFL. The accuracy and sensitivity results were staggeringly good, so we are investigating to make sure there are not any leaks in the data that making our predictions unreasonably good.
+
+Following that investigation, if all works out the next goal will be to try to make our random forest interpretable. We have found a package called rfviz which is meant to visualize random forests along will turning a random forest into a model that looks similar to a logistic model output, using variable importance to produce coefficients. This is an important step to allowing people to actually use our models in the future on real life games.
+
+Finally, after wrapping up the NFL the next step will be to apply these methods to other sports. Particularly data is already available for us in NCAA football, MLB, NHL, and NBA.
