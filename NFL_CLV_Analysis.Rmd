@@ -37,9 +37,10 @@ NFL_Sample <- NFL_lines_split %>%
   sample_n(1)
 
 NFL_Full <- NFL_Sample %>%
-  select(-Index, -id, -Final_line, -book_id, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over)
+  select(-Index, -id, -Final_line, -book_id, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  filter(Location == 'home')
 
-NFL_Full = subset(NFL_Full, select = -c(id,book_id, league) )
+NFL_Full = subset(NFL_Full, select = -c(id,book_id, league, Location) )
 
 NFL_Full <- NFL_Full %>%
   na.omit()
