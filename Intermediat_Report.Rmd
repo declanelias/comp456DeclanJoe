@@ -68,13 +68,10 @@ create_ml_prob_hist = function(league) {
   )
 }
 
-grid.arrange(create_ml_prob_hist("mlb"),
-             create_ml_prob_hist("nba"),
-             create_ml_prob_hist("ncaab"),
-             create_ml_prob_hist("nhl"),
-             create_ml_prob_hist("nfl"),
-             create_ml_prob_hist("ncaaf"),
-             nrow = 3)
+load("MLB_movement_split_df.rdata")
+MLB_Full <- MLB_lines_split %>%
+  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) %>%
+  na.omit()
 ```
 
 This plot shows the distribution of the implied home win probability. In the MLB and NHL we see a relatively normal distribution, however, with the NFL and NBA, we see slightly less normality. In the two college leagues, we do not see a normal distribution.
