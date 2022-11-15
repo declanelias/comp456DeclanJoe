@@ -253,9 +253,15 @@ data_rf_OOB_output %>%
 ```{r}
 data_fit_mtry6
 ```
-```{r}
-rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet)) %>%
+```{r, warning=FALSE}
+mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
+
+mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet)) %>%
+    conf_mat(truth = make_bet, estimate= .pred_class)
+
+mtry2Conf <- as.data.frame.matrix(mtry2Conf$table)
+mtry4Conf <- as.data.frame.matrix(mtry4Conf$table)
 
 ```
 

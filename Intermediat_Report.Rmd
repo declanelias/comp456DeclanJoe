@@ -2,7 +2,11 @@
 title: 'Taking the Sports out of Sports Gambling: Arbitrage and Expected Value Betting'
 author: "Joe Margolis and Declan Elias"
 date: '2022-11-14'
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      toc_collapsed: true
 ---
 
 ```{r setup, include=FALSE}
@@ -101,6 +105,8 @@ log_fit %>% tidy() %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
 
+These two tables show us the effect that each variable has on the odds the logistic model tells us to make a bet or not. As we can see, variables like money line and team total show positive coefficients, referencing that an increase in money line or the current over/under line set for the game points towards a greater likelihood that the line will eventually move in your favor. The other two quantitative variables are the opposite, showing negative effects on the chances of choosing to bet on the game, with being the home team representing a categorical predictor that positively effects the odds of the line moving in your favor. One final note is the outputs for the 95% confidence ratios and the p-values which all show statistical significance for each variable 
+
 ##### Making Predictions 
 
 ```{r, results='hide'}
@@ -131,6 +137,8 @@ logistic_output %>%
   theme_classic()
 ```
 
+From this predicted probability plot, we actually notice a result where if our desired threshold of 0.6 is used, we would actually never decide upon betting on the game. Our logistic model is not at least 60% sure that the line will move in our favor for any of the games in the data set. This is problematic and therefore makes it difficult to have confidence in the logistic model.
+
 ##### Evaluating Model
 
 ```{r}
@@ -150,14 +158,20 @@ logistic_output %>%
   kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
 ```
 
+This table on the other hand shows what the results for sensitivity, specificity, and accuracy would be when using a threshold of 0.5. Interestingly, we actually get a solid output for sensitivity of 0.73773, and while this is for a model that still sparsely selects to bet on the game, it is at least true that it is more important to have a higher sensitivity than any of the metrics (while the others are still important) and that shows with this model.
+
 ##### ROC Curve
 
 ```{r}
 logistic_roc <- logistic_output %>% 
     roc_curve(outcome, .pred_Yes, event_level = "second") # set second level of outcome as "success"
 
-autoplot(logistic_roc) + theme_classic()
+ROC <- autoplot(logistic_roc) + theme_classic() + labs(title = "ROC Curve for Logistic Model")
+ggplotly(ROC)
 ```
+
+Similarly, the trand of the ROC curve remaining extremely close to a linear model with correlation of one shows positive output for the logistic model. That being said though we still want to focus more heavily on maximizing sensitivity compared to 1-specificity.
+
 ##### CV Evaluation of Model
 
 ```{r}
@@ -172,3 +186,196 @@ collect_metrics(log_cv_fit) %>% #default threshold is 0.5
   kbl(caption = "Logistic Model Metric CV Fold Test Results") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
+
+This table above displays the error metrics that result from running our logistic model on training data produced through a CV Fold process with 10 folds. This actually shows a much different story from before, once again discrediting the logistic model by displaying an incredibly poor sensitivity of 0.0484. What this model does tell us though is that if you lean towards not betting on a game, you will still be able to have a relatively good accuracy, not a huge help to trying to win money but an important story nonetheless. 
+
+#### Random Forest Analysis
+
+##### Building Forest
+
+```{r}
+# Model Specification
+rf_spec <- rand_forest() %>%
+  set_engine(engine = 'ranger') %>% 
+  set_args(mtry = NULL, # size of random subset of variables; default is floor(sqrt(number of total predictors))
+           trees = 1000, # Number of trees
+           min_n = 2,
+           probability = FALSE, # FALSE: get hard predictions (not needed for regression)
+           importance = 'impurity') %>% # we'll come back to this at the end
+  set_mode('classification') # change this for regression
+
+# Recipe
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location, data = NFL_Full)
+
+# Workflows
+data_wf_mtry2 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 2)) %>%
+  add_recipe(data_rec)
+
+## Create workflows for mtry = 12, 74, and 147
+
+data_wf_mtry5 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 5)) %>%
+  add_recipe(data_rec)
+```
+
+##### Fitting Models
+
+```{r}
+NFL_Full <- NFL_Full %>%
+  na.omit()
+
+set.seed(121) # make sure to run this before each fit so that you have the same 1000 trees
+data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Full)
+
+set.seed(121) 
+data_fit_mtry5 <- fit(data_wf_mtry5, data = NFL_Full)
+```
+
+##### Making Out-Of-Bounds Predictions
+
+```{r, results='hide'}
+# Custom Function to get OOB predictions, true observed outcomes and add a user-provided model label
+rf_OOB_output <- function(fit_model, model_label, truth){
+    tibble(
+          .pred_class = fit_model %>% extract_fit_engine() %>% pluck('predictions'), #OOB predictions
+          make_bet = truth,
+          label = model_label
+      )
+}
+
+#check out the function output
+rf_OOB_output(data_fit_mtry5,5, NFL_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
+```
+
+##### Evaluating Models
+
+### Evaluating Models
+
+```{r}
+# Evaluate OOB Metrics
+
+data_rf_OOB_output <- bind_rows(
+    #rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry5,5, NFL_Full %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
+  
+)
+
+data_rf_OOB_output %>% 
+    group_by(label) %>%
+    accuracy(truth = factor(make_bet), estimate = .pred_class) %>%
+    kbl(caption = "Random Forest Models Accuracy Metrics") %>%
+    kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+```
+
+This table above shows the accuracy metrics on the out-of-bounds predictions produced by the two random forest models produced, one with an mtry of 2 and one with an mtry of 5, meaning all the variables were included. We actually notice that there is not much of a difference at all in the accuracy of these two models, both showing impressive accuracy of over 96%.
+
+```{r, warning=FALSE}
+mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet)) %>%
+    conf_mat(truth = make_bet, estimate= .pred_class)
+
+mtry5Conf <- rf_OOB_output(data_fit_mtry5,5, NFL_Full %>% pull(make_bet)) %>%
+    conf_mat(truth = make_bet, estimate= .pred_class)
+
+mtry2Conf <- as.data.frame.matrix(mtry2Conf$table)
+mtry5Conf <- as.data.frame.matrix(mtry5Conf$table)
+```
+
+```{r}
+
+mtry2Conf %>%
+    kbl(caption = "Random Forest Mtry 2 Model Confusion Matrix") %>%
+    kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+
+```
+
+This table shows the confusion matrix for the random forest model with mtry = 2. What we notice from this, in addition to the accuracy measurements from before, is great improvement on the logistic model with a sensitivity of about 0.95 while still selecting to bet on about 43% of the games. 
+
+```{r}
+
+mtry5Conf %>%
+    kbl(caption = "Random Forest Mtry 5 Model Confusion Matrix") %>%
+    kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+```
+
+This table is the confusion matrix for our other random forest model with an mtry of 5. This shows an even better sensitivity of slightly over 96% while choosing to bet on the exact same percentage of games as before at just below 43%.
+
+##### Variable Importance
+
+```{r}
+model_output <-data_fit_mtry5 %>% 
+    extract_fit_engine() 
+
+variableImp <- model_output %>% 
+    vip(num_features = 30) + theme_classic() + labs(title = "Random Forest Best Model Variable Importance", ylab = "Variable") #based on impurity
+
+ggplotly(variableImp)
+
+model_output %>% vip::vi() %>% head() %>%
+   kbl(caption = "Random Forest Best Model Variable Importance") %>%
+   kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+```
+
+The table and graph above give ranked outputs of variable importance for each variable in our chosen model, which for now is the model with an mtry of 5. As we can see here, money line is out in front with easily the most importance, followed by the game total, with the home/away status of the team you are looking to bet on actually showing the least importance of any of these variables. 
+
+#### Decision Tree
+
+##### Fitting Tree
+
+```{r}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.005,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location , data = NFL_Full)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NFL_Full)
+```
+
+##### Visualizing Tree
+
+```{r, warning=FALSE}
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+
+# Get variable importance metrics 
+# Sum of the goodness of split measures (impurity reduction) for each split for which it was the primary variable.
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+   kbl(caption = "Decision Tree Variable Importance") %>%
+   kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+```
+
+The graph above shows what has been selected as the best model decision tree for the data set. This tree has been pruned down by using a cost complexity of 0.05 to keep is visually interpretable, but something important to note is that you can see that many of the nodes being represented by money line, and that accompanies the fact that spread being greater than or equal to -12 is the root node. This is displayed in the accompanying table as well, which displays money line and spread as the two most important variables to the model.
+
+##### Making Predictions 
+
+```{r}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NFL_Full, type = "class")
+```
+
+```{r}
+table_mat <- table(NFL_Full$make_bet, prediction$.pred_class)
+table_mat <-  as.data.frame.matrix(table_mat)
+
+table_mat %>%
+   kbl(caption = "Decision Tree Confusion Matrix") %>%
+   kable_classic(full_width = F, html_font = "Cambria") # set second level of outcome as "success"
+```
+
+This table displays the confusion matrix for the decision tree above. It is important to note that, although this is supposed to give some sort of visual interpretation of what may be going on inside of the random forests model, the heavy pruning has left this tree with a much lower accuracy of about 0.61 and a sensitivity of about 0.63. In addition this decision tree runs closer to the logistic model than the random forest in the sense that the decision tree model is much less likely to predict that one should bet on the game than to say to avoid it.
