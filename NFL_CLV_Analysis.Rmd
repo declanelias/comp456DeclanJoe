@@ -32,12 +32,17 @@ load("NFL_movement_split_df.rdata")
 ### Final Cleaning
 
 ```{r}
-NFL_Full <- NFL_lines_split %>%
-  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) 
+NFL_Sample <- NFL_lines_split %>%
+  group_by(id, book_id) %>%
+  sample_n(1)
 
-NFL_Full %>%
-  group_by(factor(make_bet)) %>%
-  summarise(t=n())
+NFL_Full <- NFL_Sample %>%
+  select(-Index, -id, -Final_line, -book_id, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over)
+
+NFL_Full = subset(NFL_Full, select = -c(id,book_id, league) )
+
+NFL_Full <- NFL_Full %>%
+  na.omit()
 ```
 
 ### Model Setting
@@ -55,7 +60,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -164,7 +169,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ spread + total + team_total + Location, data = NFL_Full)
+data_rec <- recipe(make_bet ~ spread + total + team_total + money_line, data = NFL_Full)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
