@@ -110,7 +110,7 @@ This graph shows the implied win probability vs. true win probability for the 6 
 
 
 ```{r}
-ml_data %>%
+ml_data_by_sport %>%
   group_by(bins, season) %>%
   summarise(x = mean(ml_home_implied_prob),
             y = mean(home_team_win),
@@ -183,8 +183,6 @@ This graphic shows how the distribution of how the books perform compared to the
 
 
 ## Predicting For Closing Line Value
-
-### Major League Baseball (MLB)
 
 ### National Football League (NFL)
 
