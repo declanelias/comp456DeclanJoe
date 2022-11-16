@@ -334,7 +334,7 @@ ct_spec <- decision_tree() %>%
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location , data = NFL_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NFL_Full)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
