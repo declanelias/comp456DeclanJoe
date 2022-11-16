@@ -28,19 +28,18 @@ load("MLB_movement_split_df.rdata")
 ### Final Cleaning
 
 ```{r}
-MLB_Full <- MLB_lines_split %>%
-  select(-Index, -inserted, -league, -id, -Final_line, -public_team_under) %>%
-  mutate(book_id = as.factor(book_id)) %>%
-  filter(book_id != "69")%>%
-  na.omit()
+MLB_Sample <- MLB_lines_split %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
 
-MLB_Full %>%
-  group_by(factor(make_bet)) %>%
-  summarise(t=n())
-    
-MLB_lines_split %>%
-  group_by(book_id) %>%
-  summarise(t = n())
+MLB_Full <- MLB_Sample %>%
+  select(-Index, -id, -Final_line, -book_id, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  filter(Location == 'home')
+
+MLB_Full = subset(MLB_Full, select = -c(id,book_id, league, Location) )
+
+MLB_Full <- MLB_Full %>%
+  na.omit()
 ```
 
 
@@ -59,7 +58,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = MLB_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Full, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -168,7 +167,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total  + book_id + Location, data = MLB_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Full)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
@@ -204,8 +203,8 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = MLB_Full)
 set.seed(121) 
 data_fit_mtry4 <- fit(data_wf_mtry4, data = MLB_Full)
 
-set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Full)
+"set.seed(121)
+data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Full)"
 ```
 
 ```{r}
@@ -219,7 +218,7 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet))
+#rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet))
 rf_OOB_output(data_fit_mtry4,4, MLB_Full %>% pull(make_bet))
 rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
 ```
@@ -230,7 +229,7 @@ rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)),
+    #rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)),
     rf_OOB_output(data_fit_mtry4,4, MLB_Full %>% pull(make_bet)),
     rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
   
@@ -255,17 +254,17 @@ data_rf_OOB_output %>%
 ### Evaluating Best Forest
 
 ```{r}
-data_fit_mtry6
+data_fit_mtry4
 ```
 ```{r}
-rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)) %>%
+rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 ```
 
 ### Variable Importance
 
 ```{r}
-model_output <-data_fit_mtry6 %>% 
+model_output <-data_fit_mtry4 %>% 
     extract_fit_engine() 
 
 model_output %>% 
@@ -275,7 +274,7 @@ model_output %>% vip::vi() %>% head()
 ```
 
 ```{r}
-model_output2 <- data_wf_mtry12 %>% 
+model_output2 <- data_wf_mtry4 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
   fit(data = MLB_Full) %>% 
     extract_fit_engine() 
@@ -295,13 +294,13 @@ model_output2 %>% vip::vi() %>% head()
 ```{r}
 ct_spec <- decision_tree() %>%
   set_engine(engine = 'rpart') %>%
-  set_args(cost_complexity = NULL,  #default is 0.01 (used for pruning a tree)
+  set_args(cost_complexity = 0.0015,  #default is 0.01 (used for pruning a tree)
            min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
            tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total + Location + book_id, data = MLB_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Full)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
@@ -326,3 +325,19 @@ fit_mod %>%
   pluck('variable.importance')
 ```
 
+```{r}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = MLB_Full, type = "class")
+```
+
+```{r}
+table_mat <- table(MLB_Full$make_bet, prediction$.pred_class)
+table_mat
+```
+```{r}
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+
+accuracy_Test
+sens_Test
+```

@@ -33,7 +33,7 @@ load("NFL_movement_split_df.rdata")
 
 ```{r}
 NFL_Sample <- NFL_lines_split %>%
-  group_by(id, book_id) %>%
+  group_by(id, book_id, Location) %>%
   sample_n(1)
 
 NFL_Full <- NFL_Sample %>%
@@ -257,7 +257,7 @@ data_rf_OOB_output %>%
 ### Evaluating Best Forest
 
 ```{r}
-data_fit_mtry6
+data_fit_mtry4
 ```
 ```{r, warning=FALSE}
 mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet)) %>%
@@ -295,30 +295,6 @@ model_output2 %>%
 
 model_output2 %>% vip::vi() %>% head()
 
-```
-
-
-```{r}
-NFL_Full <- NFL_Full %>%
-  select(-public_ml, -public_spread, -public_team_over)
-```
-```{r}
-NFL_Full <- NFL_Full %>%
-  select(-outcome)
-```
-
-```{r}
-
-NFL_Train <- NFL_Full%>%
-  select(-make_bet)
-
-NFL_Test <- NFL_Full %>%
-  select(make_bet)
-```
-
-
-```{r}
-TidyForest <- tidyRF(model_output, NFL_Train, NFL_Test)
 ```
 
 ## Decision Tree
@@ -368,6 +344,7 @@ prediction <- predict(fit_mod, new_data = NFL_Full, type = "class")
 table_mat <- table(NFL_Full$make_bet, prediction$.pred_class)
 table_mat
 ```
+
 ```{r}
 accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
 sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
