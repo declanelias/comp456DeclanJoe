@@ -107,22 +107,22 @@ save(nfl_2022_df, file = "nfl_2022_df.rdata")
 # NCAA Football data
 
 ```{r}
-url = "https://api.actionnetwork.com/web/v1/scoreboard/ncaaf?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79&seasonType=reg"
+url = "https://api.actionnetwork.com/web/v1/scoreboard/ncaaf?period=game&seasonType=reg"
 ncaaf_df = NULL
+books = unique(betting_data$book_id)
 
 for (season in 2017:2021) {
-  week = 1
-  temp_url = param_set(url, "week", week) %>% param_set("season", season)
-  resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
-  resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-  while (length(resp_df) > 0) {
-    ncaaf_df = rbind(ncaaf_df, clean_df(resp_df, week, season))
-    Sys.sleep(1)
-    print(paste("finished week",week,season))
-    temp_url = param_set(url, "week", week) %>% param_set("season", season)
+  
+  for (week in 1:20) {
+    temp_url = param_set(url, "week", week) %>% param_set("season", season) %>% param_set("bookIds", paste(books, collapse = ","))
     resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
     resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-    week = week + 1
+    if (length(resp_df) != 0) {
+      ncaaf_df = rbind(ncaaf_df, clean_df(resp_df, week, season))
+    }
+    
+    Sys.sleep(1)
+    print(paste("finished week",week, season))
   }
 }
 
