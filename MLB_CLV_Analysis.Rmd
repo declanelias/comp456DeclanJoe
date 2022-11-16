@@ -29,7 +29,7 @@ load("MLB_movement_split_df.rdata")
 
 ```{r}
 MLB_Sample <- MLB_lines_split %>%
-  group_by(id, book_id) %>%
+  group_by(id, book_id, Location) %>%
   sample_n(1)
 
 MLB_Full <- MLB_Sample %>%
@@ -254,7 +254,7 @@ data_rf_OOB_output %>%
 ### Evaluating Best Forest
 
 ```{r}
-data_fit_mtry6
+data_fit_mtry4
 ```
 ```{r}
 rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet)) %>%
@@ -294,7 +294,7 @@ model_output2 %>% vip::vi() %>% head()
 ```{r}
 ct_spec <- decision_tree() %>%
   set_engine(engine = 'rpart') %>%
-  set_args(cost_complexity = 0.003,  #default is 0.01 (used for pruning a tree)
+  set_args(cost_complexity = 0.0015,  #default is 0.01 (used for pruning a tree)
            min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
            tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
   set_mode('classification') # change this for regression tree
@@ -327,11 +327,11 @@ fit_mod %>%
 
 ```{r}
 # Hard (class) prediction
-prediction <- predict(fit_mod, new_data = NFL_Full, type = "class")
+prediction <- predict(fit_mod, new_data = MLB_Full, type = "class")
 ```
 
 ```{r}
-table_mat <- table(NFL_Full$make_bet, prediction$.pred_class)
+table_mat <- table(MLB_Full$make_bet, prediction$.pred_class)
 table_mat
 ```
 ```{r}
