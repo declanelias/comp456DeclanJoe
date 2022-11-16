@@ -29,7 +29,7 @@ load("betting_data.rdata")
 ```{r}
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
-  filter(season == 2022 | season == 2021) %>%
+  filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
   group_by(id) %>%
   summarise(t = n())
 
