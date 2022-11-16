@@ -367,7 +367,8 @@ prediction <- predict(fit_mod, new_data = NFL_Full, type = "class")
 ```{r}
 table_mat <- table(NFL_Full$make_bet, prediction$.pred_class)
 table_mat
-```fds
+```
+
 ```{r}
 accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
 sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
