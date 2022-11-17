@@ -33,10 +33,14 @@ load("nfl_movement_2020_new.rdata")
 
 
 ```{r}
+betting_data <- betting_data %>%
+  mutate(GB_Index = row_number()) %>%
+  mutate(GB_Index = as.numeric(GB_Index))
+
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
   filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
-  group_by(id) %>%
+  group_by(id, book_id) %>%
   summarise(t = n())
 
 NFL2018 <- nfl_movement_2018 %>%
@@ -117,7 +121,8 @@ for (id in NFL$id) {
     mutate(id = game_id) %>%
     mutate(league = "nfl")
     NFL_movement_df = rbind(NFL_movement_df, resp_df)
-    
+
+  print(paste("finished game",id, book_id))
   }
 
 ```
