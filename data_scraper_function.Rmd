@@ -220,7 +220,7 @@ params:
     * NOTE: this is the year of the first game played. so in the nhl, for example, 
       having a start_year or end_year of 2021 will return data from the 2021 / 22 season
   is_clv:
-    should be a logical opperator
+    should be a logical operator
     TRUE if you want it to include line movement data
     FALSE if you do not want the line movement
 
