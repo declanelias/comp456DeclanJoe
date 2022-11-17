@@ -27,8 +27,8 @@ load("betting_data.rdata")
 ```
 
 ```{r}
-load("nfl_movement_2018.rdata")
-load("nfl_movement_2020.rdata")
+load("nfl_movement_2018_new.rdata")
+load("nfl_movement_2020_new.rdata")
 ```
 
 
