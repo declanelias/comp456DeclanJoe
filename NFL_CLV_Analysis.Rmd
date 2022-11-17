@@ -33,17 +33,16 @@ load("NFL_movement_split_df.rdata")
 
 ```{r}
 NFL_Sample <- NFL_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
   group_by(id, book_id, Location) %>%
   sample_n(1)
 
 NFL_Full <- NFL_Sample %>%
-  select(-Index, -id, -Final_line, -book_id, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
   filter(Location == 'home')
 
 NFL_Full = subset(NFL_Full, select = -c(id,book_id, league, Location) )
 
-NFL_Full <- NFL_Full %>%
-  na.omit()
 ```
 
 ### Model Setting
@@ -269,6 +268,8 @@ mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet)) %>%
 mtry2Conf <- as.data.frame.matrix(mtry2Conf$table)
 mtry4Conf <- as.data.frame.matrix(mtry4Conf$table)
 
+mtry2Conf
+mtry4Conf
 ```
 
 ### Variable Importance
