@@ -27,6 +27,11 @@ load("betting_data.rdata")
 ```
 
 ```{r}
+load("early_nfl_movement_df.csv")
+```
+
+
+```{r}
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
   filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
@@ -101,6 +106,7 @@ for (id in NFL$id) {
     mutate(id = game_id) %>%
     mutate(league = "nfl")
     NFL_movement_df = rbind(NFL_movement_df, resp_df)
+    
   }
 
 ```
