@@ -40,7 +40,7 @@ betting_data <- betting_data %>%
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
   filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
-  group_by(id, book_id) %>%
+  group_by(id) %>%
   summarise(t = n())
 
 NFL2018 <- nfl_movement_2018 %>%
@@ -122,7 +122,7 @@ for (id in NFL$id) {
     mutate(league = "nfl")
     NFL_movement_df = rbind(NFL_movement_df, resp_df)
 
-  print(paste("finished game",id, book_id))
+  print(paste("finished game",id))
   }
 
 ```
