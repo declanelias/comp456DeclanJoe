@@ -26,13 +26,14 @@ load("NCAAF_movement_df.rdata")
 load("MLB_movement_df.rdata")
 load("NHL_movement_df.rdata")
 load("NBA_movement_df.rdata")
-load("nfl_movement_2018.rdata")
-load("nfl_movement_2020.rdata")
+load("NFL_2018_movement_df.rdata")
+load("NFL_2020_movement_df.rdata")
 ```
 
 ```{r}
 NFL_movement_df <- NFL_movement_df %>%
-  rbind()
+  rbind(NFL_movement_2018_df) %>%
+  rbind(NFL_movement_2020_df)
 
 NFL_movement_df <- NFL_movement_df %>%
   mutate(inserted = gsub("T"," ", inserted)) %>%
