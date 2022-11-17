@@ -93,11 +93,14 @@ get_football_df = function(league, books, start_year, end_year,  is_clv) {
       temp_url = param_set(url, "week", week) %>% 
         param_set("season", season) %>% 
         param_set("bookIds", paste(books, collapse = ","))
-      resp = GET(temp_url, user_agent(user_agent))
-      resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-      if (length(resp_df) != 0) {
-        df = rbind(df, clean_df(resp_df, week, season))
-        print(paste("finished week",week, season))
+      resp = try(GET(temp_url, user_agent(user_agent)))
+      if (class(resp) != "try-error"){
+        resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+        temp_df = try(clean_df(resp_df, day, season), silent = TRUE)
+        if (class(temp_df) != "try-error") {
+          df = rbind(df, temp_df)
+          print(paste("finished week",week, season))
+        }
       }
     }
   }
@@ -255,6 +258,6 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
 
 
 ```{r warning=FALSE}
-get_betting_data(c("nhl", "ncaaf"), 1, 2021, 2021, FALSE)
+get_betting_data("nfl", 15, 2017, 2021, TRUE)
 ```
 
