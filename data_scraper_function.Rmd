@@ -252,9 +252,16 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
 
 ```
 
+```{r warning=FALSE}
+early_nfl_movement_df <- get_betting_data("nfl", c(15,30), 2017, 2021, TRUE)
+```
 
 
 ```{r warning=FALSE}
 get_betting_data(c("nhl", "ncaaf"), 1, 2021, 2021, FALSE)
+```
+
+```{r}
+save(early_nfl_movement_df, file = "early_nfl_movement_df.csv")
 ```
 
