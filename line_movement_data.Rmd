@@ -27,9 +27,25 @@ load("betting_data.rdata")
 ```
 
 ```{r}
+load("nfl_movement_2018.rdata")
+load("nfl_movement_2020.rdata")
+```
+
+
+```{r}
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
   filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NFL2018 <- nfl_movement_2018 %>%
+  filter(league_name == "nfl") %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NFL2020 <- nfl_movement_2020 %>%
+  filter(league_name == "nfl") %>%
   group_by(id) %>%
   summarise(t = n())
 
@@ -101,9 +117,50 @@ for (id in NFL$id) {
     mutate(id = game_id) %>%
     mutate(league = "nfl")
     NFL_movement_df = rbind(NFL_movement_df, resp_df)
+    
   }
 
 ```
+
+```{r}
+NFL_movement_2018_df = NULL
+
+for (id in NFL2018$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2018_df = rbind(NFL_movement_2018_df, resp_df)
+    
+  }
+
+```
+
+
+```{r}
+NFL_movement_2020_df = NULL
+
+for (id in NFL2020$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2020_df = rbind(NFL_movement_2020_df, resp_df)
+    
+  }
+
+```
+
 
 ```{r}
 NCAAF_movement_df = NULL
@@ -191,6 +248,8 @@ for (id in NBA$id) {
 
 ```{r}
 save(NFL_movement_df, file = "NFL_movement_df.rdata")
+save(NFL_movement_2018_df, file = "NFL_2018_movement_df.rdata")
+save(NFL_movement_2020_df, file = "NFL_2020_movement_df.rdata")
 save(NCAAF_movement_df, file = "NCAAF_movement_df.rdata")
 save(MLB_movement_df, file = "MLB_movement_df.rdata")
 ```
