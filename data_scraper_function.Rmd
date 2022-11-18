@@ -93,14 +93,11 @@ get_football_df = function(league, books, start_year, end_year,  is_clv) {
       temp_url = param_set(url, "week", week) %>% 
         param_set("season", season) %>% 
         param_set("bookIds", paste(books, collapse = ","))
-      resp = try(GET(temp_url, user_agent(user_agent)))
-      if (class(resp) != "try-error"){
-        resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-        temp_df = try(clean_df(resp_df, day, season), silent = TRUE)
-        if (class(temp_df) != "try-error") {
-          df = rbind(df, temp_df)
-          print(paste("finished week",week, season))
-        }
+      resp = GET(temp_url, user_agent(user_agent))
+      resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+      if (length(resp_df) != 0) {
+        df = rbind(df, clean_df(resp_df, week, season))
+        print(paste("finished week",week, season))
       }
     }
   }
@@ -206,6 +203,10 @@ check_params = function(leagues, books, start_year, end_year, is_clv) {
     stop("is_clv must be of class logical")
   }
 }
+
+get_book_id_data = function() {
+  
+}
 ```
 
 
@@ -266,5 +267,10 @@ get_betting_data("nfl", 15, 2017, 2021, TRUE)
 
 ```{r}
 save(early_nfl_movement_df, file = "early_nfl_movement_df.csv")
+```
+
+
+```{r}
+get_football_df("nfl", c(10,20), 2017, 2017, TRUE)
 ```
 
