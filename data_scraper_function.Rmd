@@ -19,6 +19,25 @@ library(purrr)
 
 # Helper Function DO NOT USE THESE 
 ```{r}
+get_book_id_data = function() {
+  url = "https://api.actionnetwork.com/web/v1/books"
+  user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+  resp = GET(url, user_agent(user_agent))
+  book_df = jsonlite::fromJSON(content(resp, "text"))$books
+  book_df = book_df %>%
+    unnest(meta)
+  book_df = book_df %>% 
+    select(-c(logos, website, deeplink, 
+              is_fastbet_enabled_app, 
+              is_fastbet_enabled_web, 
+              is_supported, secondary_color))
+  return(book_df)
+}
+
+BOOK_ID_DATA = get_book_id_data()
+lockBinding("BOOK_ID_DATA", globalenv())
+
+
 # Cleans the raw data frame
 clean_df = function(df, week, season) {
   
@@ -93,14 +112,11 @@ get_football_df = function(league, books, start_year, end_year,  is_clv) {
       temp_url = param_set(url, "week", week) %>% 
         param_set("season", season) %>% 
         param_set("bookIds", paste(books, collapse = ","))
-      resp = try(GET(temp_url, user_agent(user_agent)))
-      if (class(resp) != "try-error"){
-        resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-        temp_df = try(clean_df(resp_df, day, season), silent = TRUE)
-        if (class(temp_df) != "try-error") {
-          df = rbind(df, temp_df)
-          print(paste("finished week",week, season))
-        }
+      resp = GET(temp_url, user_agent(user_agent))
+      resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+      if (length(resp_df) != 0 & "odds" %in% colnames(resp_df) & "boxscore" %in% colnames(resp_df)) {
+        df = rbind(df, clean_df(resp_df, week, season))
+        print(paste("finished week",week, season))
       }
     }
   }
@@ -182,9 +198,7 @@ get_other_sport_df = function(league, books, start_year, end_year, is_clv) {
 
 check_params = function(leagues, books, start_year, end_year, is_clv) {
   LEAGUES = c("nfl", "ncaaf", "nhl", "mlb", "ncaab", "nba")
-  BOOKS = c(1, 2, 3, 4, 5, 8, 9, 10, 12, 14, 15, 16, 21, 23, 24, 28, 30, 34, 35, 36, 37, 45, 50, 52, 55, 
-            7, 11, 13, 18, 19, 25, 27, 29, 31, 32, 42, 43, 46, 47, 56, 59, 60, 61, 62, 39, 20, 64, 68, 69, 
-            71, 72, 73, 74, 76, 78, 246, 263, 478, 708, 1242, 1799)
+  BOOKS = BOOK_ID_DATA$id
   
   for (book in books) {
     if(!(book %in% BOOKS)) {
@@ -234,6 +248,10 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
   if (tolower(leagues) == "all"){
     leagues = c("nfl", "ncaaf", "nhl", "mlb", "ncaab", "nba")
   }
+  
+  if (tolower(books) == "all") {
+    books = BOOK_ID_DATA$id
+  }
   check_params(leagues, books, start_year, end_year, is_clv)
   
   df = NULL
@@ -255,16 +273,26 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
 
 ```
 
+# Get Data For Each League DO NOT CHANGE THIS
 ```{r warning=FALSE}
-early_nfl_movement_df <- get_betting_data("nfl", c(15,30), 2017, 2021, TRUE)
-```
 
-
-```{r warning=FALSE}
-get_betting_data("nfl", 15, 2017, 2021, TRUE)
-```
-
-```{r}
-save(early_nfl_movement_df, file = "early_nfl_movement_df.csv")
+map(
+  c("nfl", "ncaaf", "nhl", "mlb", "ncaab", "nba"),
+  function(league) {
+    leagues = "all"
+    books = "all"
+    start_year = 2017
+    end_year = 2022
+    is_clv = FALSE
+    df = get_betting_data(league, books, start_year, end_year, is_clv)
+    save(df, file = paste("betting_data/", league, ".rdata",sep = ""))
+    ml_df = df %>%
+      select(id, away_team_id, home_team_id, winning_team_id, 
+             league_name, season, ml_away, ml_home, ml_home_implied_prob, 
+             ml_away_implied_prob, book_id) %>%
+      filter(!is.na(winning_team_id),
+             !is.na(ml_home_implied_prob))
+  }
+)
 ```
 

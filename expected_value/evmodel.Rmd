@@ -1,0 +1,221 @@
+---
+title: "EV Model"
+output: html_document
+date: '2022-11-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidymodels)
+```
+
+
+
+```{r}
+load("ml_data_all.rdata")
+
+get_brier_score = function(df) {
+  brier_data = df %>%
+    group_by(league_name, book_id) %>%
+    summarise(brier_score = mean(brier_score),
+              n = n())
+  
+  
+  
+  brier_ref = brier_data %>%
+    group_by(league_name) %>%
+    summarise(brier_score = mean(brier_score))
+  
+  get_brier_ss = function(this.league_name, brier_score) {
+    ref_score = brier_ref %>%
+      filter(league_name == this.league_name)
+    
+    return(1 -  brier_score / ref_score$brier_score)
+  }
+    
+  
+  brier_data = brier_data %>%
+    group_by(league_name, book_id) %>%
+    mutate(brier_skill_score = get_brier_ss(league_name, brier_score)) %>% 
+    ungroup()
+  
+  return(brier_data)
+}
+```
+
+# College Football
+
+```{r}
+ml_data_ncaaf = ml_data_all %>%
+  filter(league_name == "ncaaf",
+         book_id != 263,
+         book_id != 478)
+```
+
+
+## First test: Using the average from 2017-2020 to predict 2021
+
+```{r}
+
+avg_ncaaf_data = ml_data_ncaaf %>%
+  group_by(id) %>%
+  summarise(avg_favorite_win_prob = mean(favorite_win_prob),
+            home_team_win = if_else(mean(home_team_win) > .5, TRUE, FALSE),
+            favorite_home = if_else(mean(favorite_win) > .5, TRUE, FALSE),
+            favorite_win = if_else(mean(favorite_win) > .5, TRUE, FALSE),
+            brier_score = (avg_favorite_win_prob - favorite_win) ^ 2 + (1 - avg_favorite_win_prob - !favorite_win)^2,
+            win_prob_winning_team = if_else(favorite_win, avg_favorite_win_prob, 1 - avg_favorite_win_prob),
+            win_prob_losing_team = 1 - win_prob_winning_team) %>%
+  ungroup()
+
+
+avg_ncaaf_data %>%
+  select(win_prob_winning_team, win_prob_losing_team) %>%
+  mutate(bin_win = cut(win_prob_winning_team, breaks = c(0:10) / 10),
+         bin_loss = cut(win_prob_losing_team, breaks = c(0:10) / 10)) %>%
+  group_by(bin_win) %>%
+  summarise(n_win = n()) %>%
+  mutate(n_loss = rev(n_win),
+         win_freq = n_win / (n_win + n_loss)) %>%
+  ggplot(aes(x = bin_win, y = win_freq)) +
+  geom_line(group = 1) +
+  theme_minimal() +
+  labs(x = "Win Probability")
+
+
+```
+
+## Second Test: Using the Brier Score as a weighted average
+
+#### Create the Testing and Training Sets
+```{r}
+test_data = ml_data_ncaaf %>%
+  filter(season == 2021)
+
+train_data = ml_data_ncaaf %>%
+  filter(season != 2021)
+```
+
+#### Train the data
+
+```{r}
+brier_train_data = get_brier_score(train_data)
+
+brier_train_data = brier_train_data %>%
+  filter(brier_skill_score > 0)
+
+brier_train_data = brier_train_data %>%
+  filter(book_id != 2,
+         book_id != 18,
+         book_id != 19,
+         book_id != 20,
+         book_id != 25,
+         book_id != 27,
+         book_id != 29,
+         book_id != 31,
+         book_id != 32,
+         book_id != 35,
+         book_id != 39,
+         book_id != 56,
+         book_id != 64,
+         book_id != 12)
+```
+
+
+```{r}
+
+get_brier_ss_of_book = function(this.book_id) {
+
+  if (this.book_id %in% brier_train_data$book_id) {
+    row = brier_train_data %>%
+      filter(book_id == this.book_id)
+    return(row$brier_skill_score)
+  }
+  return(0)
+}
+
+calc_weight_sum = function(book_id_list) {
+  return(sum(map_dbl(book_id_list, get_brier_ss_of_book)))
+}
+
+
+calc_weighted_win_prob = function(book_id, win_prob) {
+  
+  brier_ss = map_dbl(book_id, get_brier_ss_of_book)
+  
+  return(brier_ss * win_prob)
+}
+
+
+model_data = test_data %>%
+  mutate(weighted_home_win_prob = calc_weighted_win_prob(book_id, ml_home_implied_prob),
+         weighted_home_ml = calc_weighted_win_prob(book_id, ml_home),
+         weighted_away_ml = calc_weighted_win_prob(book_id, ml_away))
+
+model_data = model_data %>%
+  group_by(id) %>%
+  summarise(id = mean(id),
+            away_team_id = mean(away_team_id),
+            home_team_id = mean(home_team_id),
+            winning_team_id = mean(winning_team_id),
+            league_name = "ncaaf",
+            season = 2021,
+            weighted_sum = calc_weight_sum(book_id),
+            ml_away = sum(weighted_away_ml) / weighted_sum,
+            ml_home = sum(weighted_home_ml) / weighted_sum,
+            ml_home_implied_prob = sum(weighted_home_win_prob) / weighted_sum,
+            ml_away_implied_prob = 1 - ml_home_implied_prob,
+            book_id = 5000,
+            home_team_win = if_else(mean(home_team_win) > .5, TRUE, FALSE),
+            favorite_win_prob = if_else(ml_home_implied_prob > ml_away_implied_prob, 
+                                        ml_home_implied_prob, 
+                                        ml_away_implied_prob),
+            favorite_home = if_else(ml_home_implied_prob == favorite_win_prob, TRUE, FALSE),
+            favorite_win = if_else((favorite_home & home_team_win) | (!favorite_home & !home_team_win), T, F),
+            brier_score = (favorite_win_prob - favorite_win) ^ 2 + (1 - favorite_win_prob - !favorite_win)^2) %>%
+  select(-c(weighted_sum))
+
+test_data = rbind(test_data, model_data)
+
+get_brier_score(test_data)
+```
+
+
+## Should the test data be considered in the average?
+
+
+
+```{r}
+test_data %>%
+  filter(league_name == "ncaaf") %>%
+  mutate(winning_team_prob = if_else(home_team_win, ml_home_implied_prob, ml_away_implied_prob),
+         losing_team_prob = if_else(home_team_win, ml_away_implied_prob, ml_home_implied_prob)) %>%
+  ggplot(aes(x = winning_team_prob, group = book_id, color = as.factor(book_id))) +
+  geom_density(adjust=3) +
+  geom_density(aes(x = losing_team_prob), adjust=3) +
+  labs(x = "Win / Loss Probability") + 
+  theme_minimal()
+
+test_data %>%
+  filter(book_id == 5000) %>%
+  mutate(winning_team_prob = if_else(home_team_win, ml_home_implied_prob, ml_away_implied_prob),
+         losing_team_prob = if_else(home_team_win, ml_away_implied_prob, ml_home_implied_prob)) %>%
+  ggplot(aes(x = winning_team_prob, group = book_id, color = as.factor(book_id))) +
+  geom_density(adjust=3) +
+  geom_density(aes(x = losing_team_prob), adjust=3) +
+  labs(x = "Win / Loss Probability") + 
+  theme_minimal()
+
+test_data %>%
+  filter(book_id == 5000) %>%
+  mutate(win_prob_winning_team = if_else(favorite_win, favorite_win_prob, 1 - favorite_win_prob),
+         bins = cut(win_prob_winning_team, breaks = c(0:5) / 5)) %>%
+  group_by(bins) %>%
+  summarise(n_wins = n()) %>%
+  mutate(n_loss = rev(n_wins),
+         win_freq = n_wins / (n_wins + n_loss))
+```
+
+
+
