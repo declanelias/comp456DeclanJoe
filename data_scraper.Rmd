@@ -73,7 +73,7 @@ clean_df_Early = function(df, week, season) {
   
   # select the rows we need
   df = df %>%
-    select(id, start_time, away_team_id, home_team_id, winning_team_id, league_name, season, teams, boxscore, teams)
+    select(id, start_time, away_team_id, home_team_id, winning_team_id, league_name, season, teams, boxscore, teams, away_team_total, home_team_total)
   
   # add final scores
   df$home_points = df$boxscore$total_home_points
