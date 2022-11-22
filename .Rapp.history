@@ -2,3 +2,4 @@ load("/Users/joemargolis/Documents/Comp 127/GitHub/comp456DeclanJoe/ncaaf_2022_d
 view("/Users/joemargolis/Documents/Comp 127/GitHub/comp456DeclanJoe/ncaaf_2022_df.rdata")
 load("/Users/joemargolis/Documents/Comp 127/GitHub/comp456DeclanJoe/NCAAF_movement_df.rdata")
 view(NCAAF_movement_df)
+load("/Users/joemargolis/Documents/Comp 127/GitHub/comp456DeclanJoe/early_nfl_movement_df.rdata")
