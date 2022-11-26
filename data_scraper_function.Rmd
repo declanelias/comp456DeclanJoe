@@ -162,10 +162,12 @@ get_days = function(league, start_year) {
   }
   
   start_date = as.Date(paste(start_year, start_date, sep = "-"))
-  end_date = as.Date(paste(start_year + 1, end_date, sep = "-"))
+  end_date = as.Date(paste(end_year, end_date, sep = "-"))
   
   return(format_date(seq(start_date, end_date, by = "days")))
 }
+
+
 
 
 get_other_sport_df = function(league, books, start_year, end_year, is_clv) {
@@ -276,23 +278,5 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
 # Get Data For Each League DO NOT CHANGE THIS
 ```{r warning=FALSE}
 
-map(
-  c("nfl", "ncaaf", "nhl", "mlb", "ncaab", "nba"),
-  function(league) {
-    leagues = "all"
-    books = "all"
-    start_year = 2017
-    end_year = 2022
-    is_clv = FALSE
-    df = get_betting_data(league, books, start_year, end_year, is_clv)
-    save(df, file = paste("betting_data/", league, ".rdata",sep = ""))
-    ml_df = df %>%
-      select(id, away_team_id, home_team_id, winning_team_id, 
-             league_name, season, ml_away, ml_home, ml_home_implied_prob, 
-             ml_away_implied_prob, book_id) %>%
-      filter(!is.na(winning_team_id),
-             !is.na(ml_home_implied_prob))
-  }
-)
 ```
 

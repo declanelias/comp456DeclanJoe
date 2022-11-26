@@ -52,7 +52,7 @@ clean_df = function(df, week, season) {
   # remove unnecessary variables in the odds
   df = df %>%
     select(-c(ml_home_public, ml_away_public, spread_home_public, spread_away_public, total_under_public, total_over_public, ml_home_money, ml_away_money, 
-              spread_home_money, total_over_money, total_under_money, num_bets, type, inserted, line_status))
+              spread_home_money, total_over_money, total_under_money))
   
   # add the week
   df = df %>%
@@ -63,31 +63,11 @@ clean_df = function(df, week, season) {
 }
 
 
-# Checks the is_clv parameter for the get_football_df and get_other_sports df. 
-# 
-# Param url: url for ActionNetwork website
-# Param is_clv: logical value indicating whether the url is for closing line value or just for the game
-#
-# Returns a url to be used that indic
-check_is_clv = function(is_clv, url) {
-  if (class(is_clv) == class(TRUE)) {
-    if (!is_clv) {
-      url = url %>% 
-        param_set("period", "game")
-    }
-  } else {
-    stop("is_clv should be a boolean")
-  }
-  
-  return(url)
-}
 
-
-
-get_football_df = function(league, books, start_year, end_year,  is_clv) {
+get_football_df = function(league, books, start_year, end_year) {
   user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
-  url = paste("https://api.actionnetwork.com/web/v1/scoreboard/", league, "?", sep = "")
-  url = check_is_clv(is_clv, url)
+  url = paste("https://api.actionnetwork.com/web/v1/scoreboard/", league, "?", sep = "") %>%
+    param_set("period", "game")
   
   df = NULL  
   for (season in start_year:end_year) {
@@ -118,17 +98,15 @@ format_date = function(date) {
 
 get_days = function(league, start_year) {
   days = c()
-  if (start_year == 2019) {
-    if (league == "nba") {
-      start_date = "10-22"
-      end_date = "10-11"
-      end_year = 2020
-    } else if (league == "nhl") {
-      start_date = "10-02"
-      end_date = "09-30"
-      end_year = 2020
-    }
-  } else if (league %in% c("nhl", "nba")) {
+  if (league == "nba" & start_year == 2019) {
+    start_date = "10-22"
+    end_date = "10-11"
+    end_year = 2020
+  } else if (league == "nhl" & start_year == 2019) {
+    start_date = "10-02"
+    end_date = "09-30"
+    end_year = 2020
+  }else if (league %in% c("nhl", "nba")) {
     start_date = "10-01"
     end_date = "07-01"
     end_year = start_year + 1
@@ -152,9 +130,9 @@ get_days = function(league, start_year) {
 }
 
 
-get_other_sport_df = function(league, books, start_year, end_year, is_clv) {
-  url = paste("https://api.actionnetwork.com/web/v1/scoreboard/", league, "?", sep = "")
-  url = check_is_clv(is_clv, url)
+get_other_sport_df = function(league, books, start_year, end_year) {
+  url = paste("https://api.actionnetwork.com/web/v1/scoreboard/", league, "?", sep = "") %>%
+    param_set("period", "game")
   user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
   
   df = NULL
@@ -180,7 +158,7 @@ get_other_sport_df = function(league, books, start_year, end_year, is_clv) {
   return(df)
 }
 
-check_params = function(leagues, books, start_year, end_year, is_clv) {
+check_params = function(leagues, books, start_year, end_year) {
   LEAGUES = c("nfl", "ncaaf", "nhl", "mlb", "ncaab", "nba")
   BOOKS = BOOK_ID_DATA$id
   
@@ -199,13 +177,9 @@ check_params = function(leagues, books, start_year, end_year, is_clv) {
   if (start_year > 2022 | end_year > 2022) {
     stop("Cannot get data past 2022")
   }
-  
-  if (class(is_clv) != class(TRUE)) {
-    stop("is_clv must be of class logical")
-  }
 }
 
-get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
+get_betting_data = function(leagues, books, start_year, end_year) {
   if (tolower(leagues) == "all"){
     leagues = c("nfl", "ncaaf", "nhl", "mlb", "ncaab", "nba")
   }
@@ -213,7 +187,7 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
   if (tolower(books) == "all") {
     books = BOOK_ID_DATA$id
   }
-  check_params(leagues, books, start_year, end_year, is_clv)
+  check_params(leagues, books, start_year, end_year)
   
   df = NULL
   for (league in leagues) {
@@ -222,9 +196,9 @@ get_betting_data = function(leagues, books, start_year, end_year, is_clv) {
     print("-----------------------------------------------")
     
     if (league %in% c("ncaaf", "nfl")) {
-      temp_df = get_football_df(league, books, start_year, end_year, is_clv)
+      temp_df = get_football_df(league, books, start_year, end_year)
     } else {
-      temp_df = get_other_sport_df(league, books, start_year, end_year, is_clv)
+      temp_df = get_other_sport_df(league, books, start_year, end_year)
     }
     df = rbind(df, temp_df)
   }
