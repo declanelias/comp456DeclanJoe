@@ -28,12 +28,38 @@ load("NHL_movement_df.rdata")
 load("NBA_movement_df.rdata")
 load("NFL_2018_movement_df.rdata")
 load("NFL_2020_movement_df.rdata")
+load("NFL_movement_2016_df.rdata")
+load("NFL_movement_2015_df.rdata")
+load("NFL_movement_2014_df.rdata")
+load("NFL_movement_2013_df.rdata")
+load("NFL_movement_2012_df.rdata")
 ```
 
 ```{r}
 NFL_movement_df <- NFL_movement_df %>%
-  rbind(NFL_movement_2018_df) %>%
-  rbind(NFL_movement_2020_df)
+  rbind(NFL_movement_2018_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2020_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2016_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2015_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2014_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2013_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2012_df) 
+
+```
+
+```{r}
 
 NFL_movement_df <- NFL_movement_df %>%
   mutate(inserted = gsub("T"," ", inserted)) %>%

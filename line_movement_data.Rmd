@@ -29,6 +29,41 @@ load("betting_data.rdata")
 ```{r}
 load("nfl_movement_2018_new.rdata")
 load("nfl_movement_2020_new.rdata")
+
+load("nfl_df_early.rdata")
+```
+
+
+```{r}
+NFL2016 <- nfl_df_early %>%
+  filter(league_name == "nfl") %>%
+  filter(season== 2016) %>%
+  group_by(id) %>%
+  summarise(t = n())
+  
+NFL2015 <- nfl_df_early %>%
+  filter(league_name == "nfl") %>%
+  filter(season== 2015) %>%
+  group_by(id) %>%
+  summarise(t = n())
+  
+NFL2014 <- nfl_df_early %>%
+  filter(league_name == "nfl") %>%
+  filter(season== 2014) %>%
+  group_by(id) %>%
+  summarise(t = n())
+  
+NFL2013 <- nfl_df_early %>%
+  filter(league_name == "nfl") %>%
+  filter(season== 2013) %>%
+  group_by(id) %>%
+  summarise(t = n())
+  
+NFL2012 <- nfl_df_early %>%
+  filter(league_name == "nfl") %>%
+  filter(season== 2012) %>%
+  group_by(id) %>%
+  summarise(t = n())
 ```
 
 
@@ -49,6 +84,11 @@ NFL2018 <- nfl_movement_2018 %>%
   summarise(t = n())
 
 NFL2020 <- nfl_movement_2020 %>%
+  filter(league_name == "nfl") %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NFLEarly <- nfl_df_early %>%
   filter(league_name == "nfl") %>%
   group_by(id) %>%
   summarise(t = n())
@@ -165,7 +205,106 @@ for (id in NFL2020$id) {
   }
 
 ```
+```{r}
+NFL_movement_2016_df = NULL
 
+for (id in NFL2016$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2016_df = rbind(NFL_movement_2016_df, resp_df)
+
+  print(paste("finished game",id))
+}
+
+
+```
+
+```{r}
+NFL_movement_2015_df = NULL
+
+for (id in NFL2015$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2015_df = rbind(NFL_movement_2015_df, resp_df)
+
+  print(paste("finished game",id))
+}
+
+```
+
+```{r}
+NFL_movement_2014_df = NULL
+
+for (id in NFL2014$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2014_df = rbind(NFL_movement_2014_df, resp_df)
+
+  print(paste("finished game",id))
+}
+
+```
+
+```{r}
+NFL_movement_2013_df = NULL
+
+for (id in NFL2013$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2013_df = rbind(NFL_movement_2013_df, resp_df)
+
+  print(paste("finished game",id))
+}
+
+```
+
+```{r}
+NFL_movement_2012_df = NULL
+
+for (id in NFL2012$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nfl")
+    NFL_movement_2012_df = rbind(NFL_movement_2012_df, resp_df)
+
+  print(paste("finished game",id))
+}
+
+```
 
 ```{r}
 NCAAF_movement_df = NULL
@@ -252,9 +391,14 @@ for (id in NBA$id) {
 ```
 
 ```{r}
-save(NFL_movement_df, file = "NFL_movement_df.rdata")
-save(NFL_movement_2018_df, file = "NFL_2018_movement_df.rdata")
-save(NFL_movement_2020_df, file = "NFL_2020_movement_df.rdata")
+#save(NFL_movement_df, file = "NFL_movement_df.rdata")
+#save(NFL_movement_2018_df, file = "NFL_2018_movement_df.rdata")
+#save(NFL_movement_2020_df, file = "NFL_2020_movement_df.rdata")
+save(NFL_movement_2016_df, file = "NFL_movement_2016_df.rdata")
+save(NFL_movement_2015_df, file = "NFL_movement_2015_df.rdata")
+save(NFL_movement_2014_df, file = "NFL_movement_2014_df.rdata")
+save(NFL_movement_2013_df, file = "NFL_movement_2013_df.rdata")
+save(NFL_movement_2012_df, file = "NFL_movement_2012_df.rdata")
 save(NCAAF_movement_df, file = "NCAAF_movement_df.rdata")
 save(MLB_movement_df, file = "MLB_movement_df.rdata")
 ```
