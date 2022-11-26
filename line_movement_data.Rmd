@@ -68,9 +68,7 @@ NFL2012 <- nfl_df_early %>%
 
 
 ```{r}
-betting_data <- betting_data %>%
-  mutate(GB_Index = row_number()) %>%
-  mutate(GB_Index = as.numeric(GB_Index))
+
 
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
@@ -399,6 +397,9 @@ save(NFL_movement_2015_df, file = "NFL_movement_2015_df.rdata")
 save(NFL_movement_2014_df, file = "NFL_movement_2014_df.rdata")
 save(NFL_movement_2013_df, file = "NFL_movement_2013_df.rdata")
 save(NFL_movement_2012_df, file = "NFL_movement_2012_df.rdata")
+```
+
+```{r}
 save(NCAAF_movement_df, file = "NCAAF_movement_df.rdata")
 save(MLB_movement_df, file = "MLB_movement_df.rdata")
 ```
