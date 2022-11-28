@@ -34,16 +34,16 @@ load("NCAAF_movement_split_df.rdata")
 ### Final Cleaning
 
 ```{r}
-NFL_Sample <- NFL_lines_split %>%
+NCAAF_Sample <- NCAAF_lines_split %>%
   select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
   na.omit() %>%
   group_by(id, book_id, Location) %>%
   sample_n(1)
 
-NFL_Full <- NFL_Sample %>%
+NCAAF_Full <- NCAAF_Sample %>%
   filter(Location == 'home')
 
-NFL_Full = subset(NFL_Full, select = -c(id,book_id, league, Location) )
+NCAAF_Full = subset(NCAAF_Full, select = -c(id,book_id, league, Location) )
 
 ```
 
@@ -51,10 +51,10 @@ NFL_Full = subset(NFL_Full, select = -c(id,book_id, league, Location) )
 
 ```{r}
 # Make sure you set reference level (the outcome you are NOT interested in)
-NFL_Full <- NFL_Full %>%
+NCAAF_Full <- NCAAF_Full %>%
   mutate(outcome = relevel(factor(make_bet), ref='No')) #set reference level
 
-NFL_cv10 <- vfold_cv(NFL_Full, v = 10)
+NCAAF_cv10 <- vfold_cv(NCAAF_Full, v = 10)
 
 # Logistic Regression Model Spec
 logistic_spec <- logistic_reg() %>%
@@ -62,7 +62,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NFL_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NCAAF_Full, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -72,7 +72,7 @@ log_wf <- workflow() %>%
     add_model(logistic_spec) 
 
 # Fit Model to Training Data
-log_fit <- fit(log_wf, data = NFL_Full)
+log_fit <- fit(log_wf, data = NCAAF_Full)
 ```
 
 ### Checking Model
@@ -90,18 +90,18 @@ log_fit %>% tidy() %>%
 ### Predicting on all Data
 ```{r}
 # Make soft (probability) predictions
-predict(log_fit, new_data = NFL_Full, type = "prob")
+predict(log_fit, new_data = NCAAF_Full, type = "prob")
 
 # Make hard (class) predictions (using a default 0.5 probability threshold)
-predict(log_fit, new_data = NFL_Full, type = "class")
+predict(log_fit, new_data = NCAAF_Full, type = "class")
 ```
 
 ### Predicting on Training Data
 
 ```{r}
 # Soft predictions
-logistic_output <-  NFL_Full %>%
-  bind_cols(predict(log_fit, new_data = NFL_Full, type = 'prob')) 
+logistic_output <-  NCAAF_Full %>%
+  bind_cols(predict(log_fit, new_data = NCAAF_Full, type = 'prob')) 
 
 # Hard predictions (you pick threshold)
 logistic_output <- logistic_output %>%
@@ -148,7 +148,7 @@ autoplot(logistic_roc) + theme_classic()
 # CV Fit Model
 log_cv_fit <- fit_resamples(
     log_wf, 
-    resamples = NFL_cv10,
+    resamples = NCAAF_cv10,
     metrics = metric_set(sens, yardstick::spec, accuracy, roc_auc),
     control = control_resamples(save_pred = TRUE, event_level = 'second'))  # you need predictions for ROC calculations
 
@@ -171,7 +171,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ spread + total + team_total + money_line, data = NFL_Full)
+data_rec <- recipe(make_bet ~ spread + total + team_total + money_line, data = NCAAF_Full)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
@@ -193,11 +193,11 @@ data_wf_mtry4 <- workflow() %>%
 ### Fitting Models
 
 ```{r}
-NFL_Full <- NFL_Full %>%
+NCAAF_Full <- NCAAF_Full %>%
   na.omit()
 
 set.seed(121) # make sure to run this before each fit so that you have the same 1000 trees
-data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Full)
+data_fit_mtry2 <- fit(data_wf_mtry2, data = NCAAF_Full)
 
 ```
 
@@ -205,10 +205,10 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Full)
 
 # Fit models for 12, 74, 147
 set.seed(121) 
-data_fit_mtry4 <- fit(data_wf_mtry4, data = NFL_Full)
+data_fit_mtry4 <- fit(data_wf_mtry4, data = NCAAF_Full)
 
 "set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = NFL_Full)"
+data_fit_mtry6 <- fit(data_wf_mtry6, data = NCAAF_Full)"
 ```
 
 ```{r}
@@ -222,9 +222,9 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-#rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
+#rf_OOB_output(data_fit_mtry6,6, NCAAF_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry4,4, NCAAF_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry2,2, NCAAF_Full %>% pull(make_bet))
 ```
 
 ### Evaluating Models
@@ -233,9 +233,9 @@ rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    #rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet))
+    #rf_OOB_output(data_fit_mtry6,6, NCAAF_Full %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry4,4, NCAAF_Full %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry2,2, NCAAF_Full %>% pull(make_bet))
   
 )
 
@@ -261,10 +261,10 @@ data_rf_OOB_output %>%
 data_fit_mtry4
 ```
 ```{r, warning=FALSE}
-mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NFL_Full %>% pull(make_bet)) %>%
+mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NCAAF_Full %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 
-mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NFL_Full %>% pull(make_bet)) %>%
+mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NCAAF_Full %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 
 mtry2Conf <- as.data.frame.matrix(mtry2Conf$table)
@@ -289,7 +289,7 @@ model_output %>% vip::vi() %>% head()
 ```{r}
 model_output2 <- data_wf_mtry4 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
-  fit(data = NFL_Full) %>% 
+  fit(data = NCAAF_Full) %>% 
     extract_fit_engine() 
 
 model_output2 %>% 
@@ -313,14 +313,14 @@ ct_spec <- decision_tree() %>%
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NFL_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NCAAF_Full)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
   add_recipe(data_rec)
 
 fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
-  fit(data = NFL_Full)
+  fit(data = NCAAF_Full)
 ```
 
 ### Visualizing Tree
@@ -340,11 +340,11 @@ fit_mod %>%
 
 ```{r}
 # Hard (class) prediction
-prediction <- predict(fit_mod, new_data = NFL_Full, type = "class")
+prediction <- predict(fit_mod, new_data = NCAAF_Full, type = "class")
 ```
 
 ```{r}
-table_mat <- table(NFL_Full$make_bet, prediction$.pred_class)
+table_mat <- table(NCAAF_Full$make_bet, prediction$.pred_class)
 table_mat
 ```
 
@@ -363,16 +363,16 @@ sens_Test
 ### Final Cleaning
 
 ```{r}
-NFL_Sample <- NFL_lines_split %>%
+NCAAF_Sample <- NCAAF_lines_split %>%
   select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
   na.omit() %>%
   group_by(id, book_id, Location) %>%
   sample_n(1)
 
-NFL_Away <- NFL_Sample %>%
+NCAAF_Away <- NCAAF_Sample %>%
   filter(Location == 'away')
 
-NFL_Away = subset(NFL_Away, select = -c(id,book_id, league, Location) )
+NCAAF_Away = subset(NCAAF_Away, select = -c(id,book_id, league, Location) )
 
 ```
 
@@ -380,10 +380,10 @@ NFL_Away = subset(NFL_Away, select = -c(id,book_id, league, Location) )
 
 ```{r}
 # Make sure you set reference level (the outcome you are NOT interested in)
-NFL_Away <- NFL_Away %>%
+NCAAF_Away <- NCAAF_Away %>%
   mutate(outcome = relevel(factor(make_bet), ref='No')) #set reference level
 
-NFL_cv10 <- vfold_cv(NFL_Away, v = 10)
+NCAAF_cv10 <- vfold_cv(NCAAF_Away, v = 10)
 
 # Logistic Regression Model Spec
 logistic_spec <- logistic_reg() %>%
@@ -391,7 +391,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NFL_Away, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NCAAF_Away, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -401,7 +401,7 @@ log_wf <- workflow() %>%
     add_model(logistic_spec) 
 
 # Fit Model to Training Data
-log_fit <- fit(log_wf, data = NFL_Away)
+log_fit <- fit(log_wf, data = NCAAF_Away)
 ```
 
 ### Checking Model
@@ -419,18 +419,18 @@ log_fit %>% tidy() %>%
 ### Predicting on all Data
 ```{r}
 # Make soft (probability) predictions
-predict(log_fit, new_data = NFL_Away, type = "prob")
+predict(log_fit, new_data = NCAAF_Away, type = "prob")
 
 # Make hard (class) predictions (using a default 0.5 probability threshold)
-predict(log_fit, new_data = NFL_Away, type = "class")
+predict(log_fit, new_data = NCAAF_Away, type = "class")
 ```
 
 ### Predicting on Training Data
 
 ```{r}
 # Soft predictions
-logistic_output <-  NFL_Away %>%
-  bind_cols(predict(log_fit, new_data = NFL_Away, type = 'prob')) 
+logistic_output <-  NCAAF_Away %>%
+  bind_cols(predict(log_fit, new_data = NCAAF_Away, type = 'prob')) 
 
 # Hard predictions (you pick threshold)
 logistic_output <- logistic_output %>%
@@ -477,7 +477,7 @@ autoplot(logistic_roc) + theme_classic()
 # CV Fit Model
 log_cv_fit <- fit_resamples(
     log_wf, 
-    resamples = NFL_cv10,
+    resamples = NCAAF_cv10,
     metrics = metric_set(sens, yardstick::spec, accuracy, roc_auc),
     control = control_resamples(save_pred = TRUE, event_level = 'second'))  # you need predictions for ROC calculations
 
@@ -500,7 +500,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ spread + total + team_total + money_line, data = NFL_Away)
+data_rec <- recipe(make_bet ~ spread + total + team_total + money_line, data = NCAAF_Away)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
@@ -522,11 +522,11 @@ data_wf_mtry4 <- workflow() %>%
 ### Fitting Models
 
 ```{r}
-NFL_Away <- NFL_Away %>%
+NCAAF_Away <- NCAAF_Away %>%
   na.omit()
 
 set.seed(121) # make sure to run this before each fit so that you have the same 1000 trees
-data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Away)
+data_fit_mtry2 <- fit(data_wf_mtry2, data = NCAAF_Away)
 
 ```
 
@@ -534,10 +534,10 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = NFL_Away)
 
 # Fit models for 12, 74, 147
 set.seed(121) 
-data_fit_mtry4 <- fit(data_wf_mtry4, data = NFL_Away)
+data_fit_mtry4 <- fit(data_wf_mtry4, data = NCAAF_Away)
 
 "set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = NFL_Full)"
+data_fit_mtry6 <- fit(data_wf_mtry6, data = NCAAF_Full)"
 ```
 
 ```{r}
@@ -551,9 +551,9 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-#rf_OOB_output(data_fit_mtry6,6, NFL_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry4,4, NFL_Away %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry2,2, NFL_Away %>% pull(make_bet))
+#rf_OOB_output(data_fit_mtry6,6, NCAAF_Full %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry4,4, NCAAF_Away %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry2,2, NCAAF_Away %>% pull(make_bet))
 ```
 
 ### Evaluating Models
@@ -562,9 +562,9 @@ rf_OOB_output(data_fit_mtry2,2, NFL_Away %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    #rf_OOB_output(data_fit_mtry6,6, NFL_Away %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry4,4, NFL_Away %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry2,2, NFL_Away %>% pull(make_bet))
+    #rf_OOB_output(data_fit_mtry6,6, NCAAF_Away %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry4,4, NCAAF_Away %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry2,2, NCAAF_Away %>% pull(make_bet))
   
 )
 
@@ -590,10 +590,10 @@ data_rf_OOB_output %>%
 data_fit_mtry4
 ```
 ```{r, warning=FALSE}
-mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NFL_Away %>% pull(make_bet)) %>%
+mtry2Conf <- rf_OOB_output(data_fit_mtry2,2, NCAAF_Away %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 
-mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NFL_Away %>% pull(make_bet)) %>%
+mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NCAAF_Away %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 
 mtry2Conf <- as.data.frame.matrix(mtry2Conf$table)
@@ -618,7 +618,7 @@ model_output %>% vip::vi() %>% head()
 ```{r}
 model_output2 <- data_wf_mtry4 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
-  fit(data = NFL_Away) %>% 
+  fit(data = NCAAF_Away) %>% 
     extract_fit_engine() 
 
 model_output2 %>% 
@@ -642,14 +642,14 @@ ct_spec <- decision_tree() %>%
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NFL_Away)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NCAAF_Away)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
   add_recipe(data_rec)
 
 fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
-  fit(data = NFL_Away)
+  fit(data = NCAAF_Away)
 ```
 
 ### Visualizing Tree
@@ -669,11 +669,11 @@ fit_mod %>%
 
 ```{r}
 # Hard (class) prediction
-prediction <- predict(fit_mod, new_data = NFL_Away, type = "class")
+prediction <- predict(fit_mod, new_data = NCAAF_Away, type = "class")
 ```
 
 ```{r}
-table_mat <- table(NFL_Away$make_bet, prediction$.pred_class)
+table_mat <- table(NCAAF_Away$make_bet, prediction$.pred_class)
 table_mat
 ```
 

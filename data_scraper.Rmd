@@ -126,10 +126,6 @@ for (i in 1:7) {
 
 ```
 
-```{r}
-save(nfl_2022_df, file = "nfl_2022_df.rdata")
-```
-
 
 # Early NFL
 
@@ -166,7 +162,7 @@ save(nfl_df_early, file = "nfl_df_early.rdata")
 ```{r}
 url = "https://api.actionnetwork.com/web/v1/scoreboard/ncaaf?period=game&seasonType=reg"
 ncaaf_df = NULL
-books = unique(betting_data$book_id)
+books = c(15,30,68,69,71,75,76)
 
 for (season in 2017:2021) {
   
@@ -196,10 +192,35 @@ for (i in 1:9) {
 
 ```
 
+# Early NCAAF
+
+```{r}
+
+url = "https://api.actionnetwork.com/web/v1/scoreboard/ncaaf?period=game&seasonType=reg"
+ncaaf_df_early = NULL
+books = c(15,30,68,69,71,75,76)
+
+for (season in 2017:2021) {
+  
+  for (week in 1:20) {
+    temp_url = param_set(url, "week", week) %>% param_set("season", season) %>% param_set("bookIds", paste(books, collapse = ","))
+    resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
+    resp_df = jsonlite::fromJSON(content(resp, "text"))$games
+    if (length(resp_df) != 0) {
+      ncaaf_df_early = rbind(ncaaf_df_early, clean_df_Early(resp_df, week, season))
+    }
+    
+    Sys.sleep(1)
+    print(paste("finished week",week, season))
+  }
+}
+
+
+```
+
 ```{r}
 save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
 ```
-
 
 
 
