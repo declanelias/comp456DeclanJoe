@@ -344,8 +344,9 @@ betting_data = rbind(betting_data, nhl_df)
 # MLB
 
 ```{r}
+days2016 = format_date(seq(as.Date("2017-04-04"), as.Date("2017-10-01"), by="days"))
 days2017 = format_date(seq(as.Date("2017-04-27"), as.Date("2017-10-01"), by="days"))
-days2018 = format_date(seq(as.Date("2018-03-29"), as.Date("2019-10-28"), by="days"))
+days2018 = format_date(seq(as.Date("2018-03-29"), as.Date("2018-10-28"), by="days"))
 days2019 = format_date(seq(as.Date("2019-03-20"), as.Date("2019-10-30"), by="days"))
 days2020 = format_date(seq(as.Date("2020-07-23"), as.Date("2020-10-28"), by="days"))
 days2021 = format_date(seq(as.Date("2021-04-01"), as.Date("2022-10-03"), by="days"))
