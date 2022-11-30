@@ -21,6 +21,7 @@ library(urltools)
 library(tidyverse)
 library(lubridate)
 library(dplyr)
+library(rtweet)
 ```
 
 
@@ -74,6 +75,32 @@ clean_df_Early = function(df, week, season) {
   # select the rows we need
   df = df %>%
     select(id, start_time, away_team_id, home_team_id, winning_team_id, league_name, season, teams, boxscore, teams, away_team_total, home_team_total)
+  
+  # add final scores
+  df$home_points = df$boxscore$total_home_points
+  df$away_points = df$boxscore$total_away_points
+  
+  # remove unnecessary rows
+  df = df %>%
+    select(-c(boxscore))
+  
+  # add the week
+  df = df %>%
+    mutate(week = week,
+           season = season)
+  
+  return(df)
+}
+```
+
+# Pre Odds Cleaning Function
+
+```{r}
+NCAAFclean_df_Early = function(df, week, season) {
+  
+  # select the rows we need
+  df = df %>%
+    select(id, start_time, away_team_id, home_team_id, winning_team_id, league_name, season, teams, boxscore, teams)
   
   # add final scores
   df$home_points = df$boxscore$total_home_points
@@ -200,14 +227,14 @@ url = "https://api.actionnetwork.com/web/v1/scoreboard/ncaaf?period=game&seasonT
 ncaaf_df_early = NULL
 books = c(15,30,68,69,71,75,76)
 
-for (season in 2017:2021) {
+for (season in 2012:2016) {
   
   for (week in 1:20) {
     temp_url = param_set(url, "week", week) %>% param_set("season", season) %>% param_set("bookIds", paste(books, collapse = ","))
     resp = GET(temp_url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"))
     resp_df = jsonlite::fromJSON(content(resp, "text"))$games
     if (length(resp_df) != 0) {
-      ncaaf_df_early = rbind(ncaaf_df_early, clean_df_Early(resp_df, week, season))
+      ncaaf_df_early = rbind(ncaaf_df_early, NCAAFclean_df_Early(resp_df, week, season))
     }
     
     Sys.sleep(1)
@@ -222,6 +249,9 @@ for (season in 2017:2021) {
 save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
 ```
 
+```{r}
+save(ncaaf_df_early, file = "ncaaf_df_early.rdata")
+```
 
 
 # NBA Data
@@ -344,14 +374,14 @@ betting_data = rbind(betting_data, nhl_df)
 # MLB
 
 ```{r}
-days2016 = format_date(seq(as.Date("2017-04-04"), as.Date("2017-10-01"), by="days"))
+days2016 = format_date(seq(as.Date("2016-04-04"), as.Date("2016-10-01"), by="days"))
 days2017 = format_date(seq(as.Date("2017-04-27"), as.Date("2017-10-01"), by="days"))
 days2018 = format_date(seq(as.Date("2018-03-29"), as.Date("2018-10-28"), by="days"))
 days2019 = format_date(seq(as.Date("2019-03-20"), as.Date("2019-10-30"), by="days"))
 days2020 = format_date(seq(as.Date("2020-07-23"), as.Date("2020-10-28"), by="days"))
 days2021 = format_date(seq(as.Date("2021-04-01"), as.Date("2022-10-03"), by="days"))
 days2022 = format_date(seq(as.Date("2022-04-07"), as.Date("2022-10-02"), by="days"))
-days = c(days2017, days2018, days2019, days2020, days2021, days2022)
+days = c(days2016, days2017, days2018, days2019, days2020, days2021, days2022)
 
 
 url = "https://api.actionnetwork.com/web/v1/scoreboard/mlb?period=game&bookIds=15,30,76,75,123,69,68,972,71,247,79"
