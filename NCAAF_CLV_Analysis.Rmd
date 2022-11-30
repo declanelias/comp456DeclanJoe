@@ -307,7 +307,7 @@ model_output2 %>% vip::vi() %>% head()
 ```{r}
 ct_spec <- decision_tree() %>%
   set_engine(engine = 'rpart') %>%
-  set_args(cost_complexity = 0.005,  #default is 0.01 (used for pruning a tree)
+  set_args(cost_complexity = 0.02,  #default is 0.01 (used for pruning a tree)
            min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
            tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
   set_mode('classification') # change this for regression tree
@@ -636,7 +636,7 @@ model_output2 %>% vip::vi() %>% head()
 ```{r}
 ct_spec <- decision_tree() %>%
   set_engine(engine = 'rpart') %>%
-  set_args(cost_complexity = 0.0022,  #default is 0.01 (used for pruning a tree)
+  set_args(cost_complexity = 0.01,  #default is 0.01 (used for pruning a tree)
            min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
            tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
   set_mode('classification') # change this for regression tree
