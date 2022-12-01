@@ -31,6 +31,7 @@ load("nfl_movement_2018_new.rdata")
 load("nfl_movement_2020_new.rdata")
 
 load("nfl_df_early.rdata")
+load("ncaaf_df_early.rdata")
 ```
 
 
@@ -66,11 +67,8 @@ NFL2012 <- nfl_df_early %>%
   summarise(t = n())
 ```
 
-
 ```{r}
-betting_data <- betting_data %>%
-  mutate(GB_Index = row_number()) %>%
-  mutate(GB_Index = as.numeric(GB_Index))
+
 
 NFL <- betting_data %>%
   filter(league_name == "nfl") %>%
@@ -116,7 +114,16 @@ NBA <- betting_data %>%
   filter(season == 2022 | season == 2021) %>%
   group_by(id) %>%
   summarise(t = n())
+
+
+NCAAFEarly <- ncaaf_df_early %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NCAAF <- NCAAF %>%
+  rbind(NCAAFEarly)
 ```
+
 
 
 game_id = 132525
@@ -320,6 +327,8 @@ for (id in NCAAF$id) {
     mutate(id = game_id) %>%
     mutate(league = "ncaal")
     NCAAF_movement_df = rbind(NCAAF_movement_df, resp_df)
+    
+    print(paste("finished game",id))
   }
 
 
@@ -399,6 +408,9 @@ save(NFL_movement_2015_df, file = "NFL_movement_2015_df.rdata")
 save(NFL_movement_2014_df, file = "NFL_movement_2014_df.rdata")
 save(NFL_movement_2013_df, file = "NFL_movement_2013_df.rdata")
 save(NFL_movement_2012_df, file = "NFL_movement_2012_df.rdata")
+```
+
+```{r}
 save(NCAAF_movement_df, file = "NCAAF_movement_df.rdata")
 save(MLB_movement_df, file = "MLB_movement_df.rdata")
 ```

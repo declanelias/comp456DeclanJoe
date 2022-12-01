@@ -138,7 +138,7 @@ NFL_lines_split <- away_NFL %>%
 NCAAF_movement_df <- NCAAF_movement_df %>%
   mutate(inserted = gsub("T"," ", inserted)) %>%
   mutate(inserted = gsub("Z","", inserted)) %>%
-  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S"))%>%
   select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
 
 NCAAF_movement_df <- cbind(Index = 1:nrow(NCAAF_movement_df), NCAAF_movement_df)   
@@ -198,6 +198,9 @@ colnames(home_NCAAF)[14] <- "Final_line"
 
 home_NCAAF <- home_NCAAF %>%
   mutate(Location = "home")
+
+```
+```{r}
 
 NCAAF_lines_split <- away_NCAAF %>%
   rbind(home_NCAAF) %>%
@@ -483,7 +486,7 @@ save(compiled_lines_split, file = "compiled_movement_split_df.rdata")
 ```
 
 ```{r}
-save(NFL_lines_split, file = "NFL_movement_split_df.rdata")
+#save(NFL_lines_split, file = "NFL_movement_split_df.rdata")
 save(NCAAF_lines_split, file = "NCAAF_movement_split_df.rdata")
 save(MLB_lines_split, file = "MLB_movement_split_df.rdata")
 save(NBA_lines_split, file = "NBA_movement_split_df.rdata")
