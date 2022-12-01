@@ -21,7 +21,7 @@ save_df = function(league) {
 }
 
 
-leagues = c("nhl", "mlb")
+leagues = c("ncaaf", "nfl")
 
 
 map(
