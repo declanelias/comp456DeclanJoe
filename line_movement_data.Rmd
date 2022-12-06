@@ -93,7 +93,19 @@ NFLEarly <- nfl_df_early %>%
 
 NCAAF <- betting_data %>%
   filter(league_name == "ncaaf") %>%
-  filter(season == 2022 | season == 2021) %>%
+  filter(season == 2022 | season == 2021 |  season == 2019 | season == 2017 ) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NCAAF2020 <- betting_data %>%
+  filter(league_name == "ncaaf") %>%
+  filter(season == 2020 ) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+NCAAF2018 <- betting_data %>%
+  filter(league_name == "ncaaf") %>%
+  filter(season == 2018) %>%
   group_by(id) %>%
   summarise(t = n())
 
@@ -105,7 +117,7 @@ MLB <- betting_data %>%
 
 NHL <- betting_data %>%
   filter(league_name == "nhl") %>%
-  filter(season == 2022 | season == 2021) %>%
+  filter(season == 2022 | season == 2021 ) %>%
   group_by(id) %>%
   summarise(t = n())
 
@@ -333,6 +345,55 @@ for (id in NCAAF$id) {
 
 
 ```
+
+```{r}
+NCAAF_movement_df_2020 = NULL
+
+for (id in NCAAF2020$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "ncaal")
+    NCAAF_movement_df_2020= rbind(NCAAF_movement_df_2020, resp_df)
+    
+    print(paste("finished game",id))
+  }
+
+
+```
+
+```{r}
+NCAAF_movement_df_2018 = NULL
+
+for (id in NCAAF2018$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "ncaal")
+    NCAAF_movement_df_2018= rbind(NCAAF_movement_df_2018, resp_df)
+    
+    print(paste("finished game",id))
+  }
+
+
+```
+
+```{r}
+NCAAF_movement_df <- NCAAF_movement_df %>%
+  rbind(NCAAF_movement_df_2018) %>%
+  rbind(NCAAF_movement_df_2020)
+```
+
 
 ```{r}
 MLB_movement_df = NULL
