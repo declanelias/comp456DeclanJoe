@@ -20,7 +20,7 @@ library(plotly)
 
 set.seed(121)
 
-load("MLB_movement_split_df.rdata")
+load("MLB_Data/MLB_movement_split_df.rdata")
 ```
 
 # Home Analysis
