@@ -20,7 +20,7 @@ library(plotly)
 
 set.seed(121)
 
-load("NHL_movement_split_df.rdata")
+load("NHL_Data/NHL_movement_split_df.rdata")
 ```
 
 # Home Analysis
