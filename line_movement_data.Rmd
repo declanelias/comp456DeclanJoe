@@ -121,9 +121,15 @@ NHL <- betting_data %>%
   group_by(id) %>%
   summarise(t = n())
 
+NHLEarly <- betting_data %>%
+  filter(league_name == "nhl") %>%
+  filter(season == 2019 | season == 2017) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
 NBA <- betting_data %>%
   filter(league_name == "nba") %>%
-  filter(season == 2022 | season == 2021) %>%
+  filter(season == 2022 | season == 2021 |  season == 2019 | season == 2017) %>%
   group_by(id) %>%
   summarise(t = n())
 
@@ -429,6 +435,30 @@ for (id in NHL$id) {
     mutate(id = game_id) %>%
     mutate(league = "nhl")
     NHL_movement_df = rbind(NHL_movement_df, resp_df)
+    
+    Sys.sleep(1)
+    print(paste("finished game",id))
+  }
+
+
+
+```
+
+```{r}
+NHL_movement_df_Early = NULL
+
+for (id in NHLEarly$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- do.call(cbind.data.frame, resp_df)
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "nhl")
+    NHL_movement_df_Early = rbind(NHL_movement_df_Early, resp_df)
     
     Sys.sleep(1)
     print(paste("finished game",id))
