@@ -21,18 +21,18 @@ library(mosaic)
 ```
 
 ```{r}
-load("NFL_movement_df.rdata")
-load("NCAAF_movement_df.rdata")
-load("MLB_movement_df.rdata")
-load("NHL_movement_df.rdata")
-load("NBA_movement_df.rdata")
-load("NFL_2018_movement_df.rdata")
-load("NFL_2020_movement_df.rdata")
-load("NFL_movement_2016_df.rdata")
-load("NFL_movement_2015_df.rdata")
-load("NFL_movement_2014_df.rdata")
-load("NFL_movement_2013_df.rdata")
-load("NFL_movement_2012_df.rdata")
+load("NFL_Data/NFL_movement_df.rdata")
+load("NCAAF_Data/NCAAF_movement_df.rdata")
+load("MLB_Data/MLB_movement_df.rdata")
+load("NHL_Data/NHL_movement_df.rdata")
+load("NBA_Data/NBA_movement_df.rdata")
+load("NFL_Data/NFL_2018_movement_df.rdata")
+load("NFL_Data/NFL_2020_movement_df.rdata")
+load("NFL_Data/NFL_movement_2016_df.rdata")
+load("NFL_Data/NFL_movement_2015_df.rdata")
+load("NFL_Data/NFL_movement_2014_df.rdata")
+load("NFL_Data/NFL_movement_2013_df.rdata")
+load("NFL_Data/NFL_movement_2012_df.rdata")
 ```
 
 ```{r}
@@ -486,14 +486,14 @@ save(compiled_lines_split, file = "compiled_movement_split_df.rdata")
 ```
 
 ```{r}
-#save(NFL_lines_split, file = "NFL_movement_split_df.rdata")
-save(NCAAF_lines_split, file = "NCAAF_movement_split_df.rdata")
-save(MLB_lines_split, file = "MLB_movement_split_df.rdata")
+#save(NFL_lines_split, file = "NFL_Data/NFL_movement_split_df.rdata")
+save(NCAAF_lines_split, file = "NCAAF_Data/NCAAF_movement_split_df.rdata")
+save(MLB_lines_split, file = "MLB_Data/MLB_movement_split_df.rdata")
 ```
 ```{r}
-save(NBA_lines_split, file = "NBA_movement_split_df.rdata")
+save(NBA_lines_split, file = "NBA_Data/NBA_movement_split_df.rdata")
 ```
 ```{r}
-save(NHL_lines_split, file = "NHL_movement_split_df.rdata")
+save(NHL_lines_split, file = "NHL_Data/NHL_movement_split_df.rdata")
 ```
 

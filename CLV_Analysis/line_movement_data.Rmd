@@ -27,11 +27,11 @@ load("betting_data.rdata")
 ```
 
 ```{r}
-load("nfl_movement_2018_new.rdata")
-load("nfl_movement_2020_new.rdata")
+load("NFL_Data/nfl_movement_2018_new.rdata")
+load("NFL_Data/nfl_movement_2020_new.rdata")
 
-load("nfl_df_early.rdata")
-load("ncaaf_df_early.rdata")
+load("NFL_Data/nfl_df_early.rdata")
+load("NCAAF_Data/ncaaf_df_early.rdata")
 ```
 
 
