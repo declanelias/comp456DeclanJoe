@@ -460,13 +460,19 @@ for (id in NHLEarly$id) {
     mutate(league = "nhl")
     NHL_movement_df_Early = rbind(NHL_movement_df_Early, resp_df)
     
-    Sys.sleep(1)
+    
     print(paste("finished game",id))
   }
 
 
 
 ```
+
+```{r}
+NHL_movement_df <- NHL_movement_df %>%
+  rbind(NHL_movement_df_Early)
+```
+
 
 ```{r}
 NBA_movement_df = NULL
