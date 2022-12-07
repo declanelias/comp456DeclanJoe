@@ -416,7 +416,7 @@ home_NHL <- home_NHL %>%
   mutate(Location = "home")
 
 NHL_lines_split <- away_NHL %>%
-  rbind(home_NFL) %>%
+  rbind(home_NHL) %>%
   mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
 ```
 
@@ -490,6 +490,8 @@ save(compiled_lines_split, file = "compiled_movement_split_df.rdata")
 save(NCAAF_lines_split, file = "NCAAF_movement_split_df.rdata")
 save(MLB_lines_split, file = "MLB_movement_split_df.rdata")
 save(NBA_lines_split, file = "NBA_movement_split_df.rdata")
+```
+```{r}
 save(NHL_lines_split, file = "NHL_movement_split_df.rdata")
 ```
 
