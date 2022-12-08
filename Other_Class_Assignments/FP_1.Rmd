@@ -1,0 +1,73 @@
+---
+title: "Final Project 1"
+author: "Joe Margolis"
+date: 'Partner: Declan Elias'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(tidyverse)
+```
+
+## 1.) Research Questions
+
+1. How can you gain an edge in sports betting (social media, regression models, etc)?
+2. What forms of sports gambling tend to be most successful?
+3. How does the legalization of sports betting affect the state outside of sports?
+
+## 2.) Data Set 1
+
+```{r}
+NFLInfo <- read.csv("spreadspoke_scores.csv")
+```
+
+1. Who: This data was put together by SpreadSpoke who retrieved their data from sources including ESPN, NFL.com, Pro Football Reference, and NFLweather.com
+2. Data Description: This dataset includes spreads, over/unders, game locations, and weather for all games from 1966 on (only 2013 and on have the gambling data)
+3. Data Limitations: This dataset does not include Money Line which is an extremely important gambling format. It would also be interesting if possible to find percentages of bets on each team to help us analyze gambler habits
+4. 
+```{r}
+colnames(NFLInfo)
+```
+Some of the important variables are the spread favorite, date for joining datasets, playoff flag, and stadium location. I also think the weather variables will be very interesting for our analysis
+
+5. 
+```{r}
+ggplot(NFLInfo, aes(x = weather_temperature, y = over_under_line)) +
+  geom_point() +
+  geom_smooth() +
+  labs(title="Over Under Line Changes As Temperature Changes", x ="Temperature (F)", y = "Over Under Line")
+```
+
+
+## 3.) Data Set 2
+
+```{r}
+NFLLines <- read.csv("2021-2022_NFL.csv")
+```
+
+1. Data Source: This data set was put online by Sports Book Review. A site that takes lines produced by different sports books and reviews to advise people of the best books
+2. Data Description: This table shows each NFL game from the 2021-2022 season and provides the accompanying opening and closing over/under game totals, over/under second half totals, 4 different moneyling changes throughout the game, and the pre game money line for each team in the game. In addition the site has similar tables for every year since 2007 that can be rbinded to this set.
+3. Data Limitations: One limitation of this dataset is that it does not contain spreads, which is luckily included in the other dataset. This set also has a separate row for each team in the game along with poor formatting of many of the variable names and dates so cleaning will be difficult with this one.
+4. 
+```{r}
+colnames(NFLLines)
+```
+The most important variables in this dataset are `Date`, because that is necessary for joining to the other sets and `ML` which represents Money Line which is necessary since the previous dataset is missing what is one of the most used bet forms. The inclusion of moving lines from opening to closing and during the game may also be important if our research takes us into what moving lines can tell us.
+
+5. 
+```{r}
+NFLLinesVis <- NFLLines %>%
+  group_by(VH) %>%
+  summarise(ML = mean(ML))
+
+ggplot(NFLLinesVis, aes(x=VH, y = ML)) + 
+        geom_col() +
+        labs(title="Comparing Home, Road, and Neutral Money Lines 2021-2022", x ="Team Location", y = "Average Money Line")
+
+```
+
+## 4.) Joins
+
+Some of the main variables we can use to join are the date and the team variables

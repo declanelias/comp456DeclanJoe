@@ -1,0 +1,258 @@
+---
+title: "FP2"
+author: Joe and Declan
+output: html_document
+date: '2022-09-27'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(cfbfastR)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+
+CFBD_API_KEY = "ysMTW4jIsv4kWgHXoM3yF8lVKm+4wNfuM9VKnZlrT5kavH0nXCxSyUpNGn4LKdtE"
+
+Sys.setenv(CFBD_API_KEY = CFBD_API_KEY)
+
+
+cfb.betting.2021 = cfbfastR::cfbd_betting_lines(year = 2021)
+```
+
+
+
+```{r}
+team_in_conference = function(conference, home_conference, away_conference) {
+  return(conference == home_conference | conference == away_conference)
+}
+
+unique(cfb.betting.2021$home_conference)[1:11]
+
+
+
+
+CFBConf <- cfb.betting.2021 %>%
+  mutate(mac = team_in_conference("Mid-American", home_conference, away_conference),
+         aac = team_in_conference("American Athletic", home_conference, away_conference),
+         acc = team_in_conference("ACC", home_conference, away_conference),
+         mtw = team_in_conference("Mountain West", home_conference, away_conference),
+         big10 = team_in_conference("Big Ten", home_conference, away_conference),
+         pac12 = team_in_conference("Pac-12", home_conference, away_conference),
+         independent = team_in_conference("FBS Independents", home_conference, away_conference),
+         big12 = team_in_conference("Big 12", home_conference, away_conference),
+         sbc = team_in_conference("Sun Belt", home_conference, away_conference),
+         sec = team_in_conference("SEC", home_conference, away_conference),
+         cusa = team_in_conference("Conference USA", home_conference, away_conference))
+
+CFBConf <- CFBConf[ !is.na(CFBConf$spread), ]
+
+mac <- CFBConf %>%
+  filter(mac == TRUE) %>%
+  summarise("Conference" = "Mid-American", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+aac <- CFBConf %>%
+  filter(aac == TRUE) %>%
+  summarise("Conference" = "American Athletic", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+acc <- CFBConf %>%
+  filter(acc == TRUE) %>%
+  summarise("Conference" = "ACC", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+mtw <- CFBConf %>%
+  filter(mtw == TRUE) %>%
+  summarise("Conference" = "Mountain West", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+big10 <- CFBConf %>%
+  filter(big10 == TRUE) %>%
+  summarise("Conference" = "Big 10", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+pac12 <- CFBConf %>%
+  filter(pac12 == TRUE) %>%
+  summarise("Conference" = "Pac-12", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+independent <- CFBConf %>%
+  filter(independent == TRUE) %>%
+  summarise("Conference" = "Independent", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+big12 <- CFBConf %>%
+  filter(big12 == TRUE) %>%
+  summarise("Conference" = "Big 12", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+sbc <- CFBConf %>%
+  filter(sbc == TRUE) %>%
+  summarise("Conference" = "Sun Belt", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+sec <- CFBConf %>%
+  filter(sec == TRUE) %>%
+  summarise("Conference" = "SEC", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+cusa <- CFBConf %>%
+  filter(cusa == TRUE) %>%
+  summarise("Conference" = "Conference USA", "Spread" = mean(as.numeric(spread)), "Outcome" = mean(away_score - home_score))
+
+Spreads <- mac %>%
+  rbind(aac)
+
+Spreads <- Spreads %>%
+  rbind(acc)
+
+Spreads <- Spreads %>%
+  rbind(big10)
+
+Spreads <- Spreads %>%
+  rbind(mtw)
+
+Spreads <- Spreads %>%
+  rbind(pac12)
+
+Spreads <- Spreads %>%
+  rbind(independent)
+
+Spreads <- Spreads %>%
+  rbind(big12)
+
+Spreads <- Spreads %>%
+  rbind(sbc)
+
+Spreads <- Spreads %>%
+  rbind(sec)
+
+Spreads <- Spreads %>%
+  rbind(cusa)
+```
+
+```{r}
+Spreads <- Spreads %>%
+  pivot_longer(cols=c(`Spread`, `Outcome`),names_to="Spread/Outcome",values_to="Average")
+
+Spreads$Conference <- factor(Spreads$Conference, levels = c("SEC", "Mid-American", "Conference USA", "Big 10", "Mountain West", "Big 12", "ACC", "Pac-12", "Independent", "American Athletic", "Sun Belt"))
+
+```
+
+```{r}
+vis <- ggplot(Spreads, aes(x = Conference, y = - `Average`, fill = `Spread/Outcome`)) +
+  geom_col(position = "dodge") +
+  labs(y = "Average Score Difference", title = "Average Difference Between Spread and Outcomes By Conference") +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  theme_minimal()
+
+ggplotly(vis) %>%
+  layout(xaxis = list(tickangle = 45, tickfont  = 22, titlefont = 22))
+  
+```
+
+The visualization displays the average point difference (orange) and expected point difference, also known as the spread (blue) for each of the 10 conferences plus independent teams in the 2021-22 NCAA Football Bowl Subdivision (FBS) season. The FBS is the top collegiate football division, comprised of 118 schools divided into 10 conferences, and 7 independent teams (no conference affiliations). Teams are broken up based on geographic location as well as prestige with the traditional power house teams being within one of the "Power 5" conferences, Pac 12, Big 10, SEC, Big 12, and the ACC. The remaining 5 conferences are known as the "Group of 5", and with few exceptions, have no traditions of national excellence.
+
+The average scores for the SEC immediately grab attention as the conference overwhelmingly has the largest actual and expected point difference. This makes sense as the SEC contained the National Champion (Georgia), as well as the runner up (Alabama). Additionally, the top of the SEC competes nationally, but there is a steep decline in quality as you reach the bottom of the conference, meaning that when beter teams play worse teams, there will be a very large point difference. We do not see a similar trend for the other Power 5 conferences. The Pac 12 and Big 10 have an average predicted point difference, but a below average actual point difference. This follows for both the conferences, as the Pac 12 had a down year with no stand out teams competeing on the National Stage. The Big 10 is generally not known for its offensive play so it makes sense that Big 10 teams would not be favored by a lot or win by a lot. 
+
+The Sun Belt and the Mountain West exhibit some interesting trends from the Group of 5. The difference in Sun Belt games was considerably larger than the average spread, with the Mountain West showing the opposite. this could be due to the fact that Vegas was over estimating Mountain West teams, and underestimating Sun Belt teams. More in depth analysis would need to be done to see if this theory holds true. Overall, the rest of the conferences had similar average point differences and spreads. 
+
+
+```{r}
+
+cfb = CFBConf %>%
+  group_by(game_id) %>%
+  summarise(spraed = mean(as.numeric(spread))) %>%
+  ungroup()
+
+
+cfb = CFBConf %>%
+  mutate(non_conf = home_conference != away_conference,
+         home_spread = as.numeric(spread),
+         away_spread = -as.numeric(spread))
+
+conferences = unique(cfb.betting.2021$home_conference)[1:11]
+
+cfb %>%
+  group_by(home_conference) %>%
+  summarise(avg.spread = mean(home_spread))
+
+cfb %>%
+  group_by(away_conference) %>%
+  summarise(avg.spraed = mean(away_spread))
+
+
+
+```
+
+for i in row:
+  get home_conference
+  add home spread to that conference
+  get away_conference
+  add away spread to that conference
+  
+  
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+cfb = cfb.betting.2021 %>%
+  filter(!is.na(spread_open))
+
+
+cfb.home = cfb %>%
+  select(home_conference, spread) %>%
+  mutate(spread = as.numeric(spread),
+         home = 1)
+
+names(cfb.home)[names(cfb.home) == "home_conference"] = "conference"
+
+cfb.away = cfb %>%
+  select(away_conference, spread) %>%
+  mutate(spread = -as.numeric(spread),
+         home = 0)
+
+names(cfb.away)[names(cfb.away) == "away_conference"] = "conference"
+
+
+cfb.away
+cfb.home
+
+fbs.conferences = unique(cfb.betting.2021$home_conference)[1:11]
+
+cfb.spread = rbind(cfb.away, cfb.home) %>%
+  mutate(conference = ifelse(conference %in% fbs.conferences, conference, "FCS"))
+
+cfb.spread %>%
+  group_by(conference) %>%
+  summarise(avg.spread = mean(spread))
+
+vis = cfb.spread %>%
+  group_by(conference) %>%
+  summarise(avg.spread = mean(spread)) %>%
+  ggplot(aes(x = conference, y = avg.spread)) + 
+  geom_col()
+
+vis
+```
+
+```{r}
+cfb = cfb %>%
+  mutate(nonconf = home_conference != away_conference)
+```
+
+```{r}
+OUConf <- cfb %>%
+  filter(home_conference == away_conference) %>%
+  mutate(total = away_score+home_score) %>%
+  mutate(OverHit = ifelse(total > over_under, 1, 0)) %>%
+  mutate(over_under = as.numeric(over_under)) %>%
+  mutate( OverCat = cut(over_under , c(30,35,40,45,50,55,60,65,max(over_under)))) %>%
+  group_by(home_conference, OverCat) %>%
+  summarise("HitPercent" = sum(OverHit/n()), "total" = n())
+
+OUConfVis <- ggplot(OUConf, aes(x=OverCat, y=HitPercent)) + 
+        geom_col(color="white") +
+        facet_wrap( ~ home_conference) +
+        labs(xlab = "Over-Under Range", ylab = "Percent of Overs that Hit") +
+        theme_minimal()
+
+ggplotly(OUConfVis) 
+```
+

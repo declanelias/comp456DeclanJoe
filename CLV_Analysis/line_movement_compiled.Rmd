@@ -1,0 +1,499 @@
+---
+title: "Cleaning Line Movement"
+author: "Joe Margolis"
+date: '2022-11-03'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rvest)
+library(dplyr)
+library(magrittr)
+library(XML)
+library(RCurl)
+library(httr)
+library(broom)
+library(mosaic)
+```
+
+```{r}
+load("NFL_Data/NFL_movement_df.rdata")
+load("NCAAF_Data/NCAAF_movement_df.rdata")
+load("MLB_Data/MLB_movement_df.rdata")
+load("NHL_Data/NHL_movement_df.rdata")
+load("NBA_Data/NBA_movement_df.rdata")
+load("NFL_Data/NFL_2018_movement_df.rdata")
+load("NFL_Data/NFL_2020_movement_df.rdata")
+load("NFL_Data/NFL_movement_2016_df.rdata")
+load("NFL_Data/NFL_movement_2015_df.rdata")
+load("NFL_Data/NFL_movement_2014_df.rdata")
+load("NFL_Data/NFL_movement_2013_df.rdata")
+load("NFL_Data/NFL_movement_2012_df.rdata")
+```
+
+```{r}
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2018_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2020_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2016_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2015_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2014_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2013_df) 
+
+NFL_movement_df <- NFL_movement_df %>%
+  rbind(NFL_movement_2012_df) 
+
+```
+
+```{r}
+
+NFL_movement_df <- NFL_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NFL_movement_df <- cbind(Index = 1:nrow(NFL_movement_df), NFL_movement_df)  
+
+NFL_final_line <- NFL_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NFL_previous_lines <- NFL_movement_df %>%
+  anti_join(NFL_final_line, by = "Index")
+```
+
+```{r}
+NFL_final_line <- NFL_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NFL_final_line)[1] <- "away_Final_Line"
+colnames(NFL_final_line)[2] <- "home_Final_Line"
+
+NFL_previous_lines <- NFL_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NFL_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NFL_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+
+
+```
+
+```{r}
+away_NFL <- NFL_previous_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_NFL)[2] <- "money_line"
+colnames(away_NFL)[3] <- "spread"
+colnames(away_NFL)[5] <- "team_total"
+colnames(away_NFL)[6] <- "public_ml"
+colnames(away_NFL)[7] <- "public_spread"
+colnames(away_NFL)[8] <- "public_team_under"
+colnames(away_NFL)[9] <- "public_team_over"
+colnames(away_NFL)[14] <- "Final_line"
+
+away_NFL <- away_NFL %>%
+  mutate(Location = "away")
+
+home_NFL <- NFL_previous_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_NFL)[2] <- "money_line"
+colnames(home_NFL)[3] <- "spread"
+colnames(home_NFL)[5] <- "team_total"
+colnames(home_NFL)[6] <- "public_ml"
+colnames(home_NFL)[7] <- "public_spread"
+colnames(home_NFL)[8] <- "public_team_under"
+colnames(home_NFL)[9] <- "public_team_over"
+colnames(home_NFL)[14] <- "Final_line"
+
+home_NFL <- home_NFL %>%
+  mutate(Location = "home")
+
+NFL_lines_split <- away_NFL %>%
+  rbind(home_NFL) %>%
+  mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
+```
+
+
+
+```{r}
+NCAAF_movement_df <- NCAAF_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S"))%>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NCAAF_movement_df <- cbind(Index = 1:nrow(NCAAF_movement_df), NCAAF_movement_df)   
+
+NCAAF_final_line <- NCAAF_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NCAAF_previous_lines <- NCAAF_movement_df %>%
+  anti_join(NCAAF_final_line, by = "Index")
+```
+
+```{r}
+NCAAF_final_line <- NCAAF_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NCAAF_final_line)[1] <- "away_Final_Line"
+colnames(NCAAF_final_line)[2] <- "home_Final_Line"
+
+NCAAF_previous_lines <- NCAAF_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NCAAF_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NCAAF_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+away_NCAAF <- NCAAF_previous_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_NCAAF)[2] <- "money_line"
+colnames(away_NCAAF)[3] <- "spread"
+colnames(away_NCAAF)[5] <- "team_total"
+colnames(away_NCAAF)[6] <- "public_ml"
+colnames(away_NCAAF)[7] <- "public_spread"
+colnames(away_NCAAF)[8] <- "public_team_under"
+colnames(away_NCAAF)[9] <- "public_team_over"
+colnames(away_NCAAF)[14] <- "Final_line"
+
+away_NCAAF <- away_NCAAF %>%
+  mutate(Location = "away")
+
+home_NCAAF <- NCAAF_previous_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_NCAAF)[2] <- "money_line"
+colnames(home_NCAAF)[3] <- "spread"
+colnames(home_NCAAF)[5] <- "team_total"
+colnames(home_NCAAF)[6] <- "public_ml"
+colnames(home_NCAAF)[7] <- "public_spread"
+colnames(home_NCAAF)[8] <- "public_team_under"
+colnames(home_NCAAF)[9] <- "public_team_over"
+colnames(home_NCAAF)[14] <- "Final_line"
+
+home_NCAAF <- home_NCAAF %>%
+  mutate(Location = "home")
+
+```
+```{r}
+
+NCAAF_lines_split <- away_NCAAF %>%
+  rbind(home_NCAAF) %>%
+  mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
+```
+
+
+```{r}
+MLB_movement_df <- MLB_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+MLB_movement_df <- cbind(Index = 1:nrow(MLB_movement_df), MLB_movement_df)   
+
+MLB_final_line <- MLB_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+MLB_previous_lines <- MLB_movement_df %>%
+  anti_join(MLB_final_line, by = "Index")
+```
+
+```{r}
+MLB_final_line <- MLB_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(MLB_final_line)[1] <- "away_Final_Line"
+colnames(MLB_final_line)[2] <- "home_Final_Line"
+
+MLB_previous_lines <- MLB_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(MLB_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+MLB_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+away_MLB <- MLB_previous_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_MLB)[2] <- "money_line"
+colnames(away_MLB)[3] <- "spread"
+colnames(away_MLB)[5] <- "team_total"
+colnames(away_MLB)[6] <- "public_ml"
+colnames(away_MLB)[7] <- "public_spread"
+colnames(away_MLB)[8] <- "public_team_under"
+colnames(away_MLB)[9] <- "public_team_over"
+colnames(away_MLB)[14] <- "Final_line"
+
+away_MLB <- away_MLB %>%
+  mutate(Location = "away")
+
+home_MLB <- MLB_previous_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_MLB)[2] <- "money_line"
+colnames(home_MLB)[3] <- "spread"
+colnames(home_MLB)[5] <- "team_total"
+colnames(home_MLB)[6] <- "public_ml"
+colnames(home_MLB)[7] <- "public_spread"
+colnames(home_MLB)[8] <- "public_team_under"
+colnames(home_MLB)[9] <- "public_team_over"
+colnames(home_MLB)[14] <- "Final_line"
+
+home_MLB <- home_MLB %>%
+  mutate(Location = "home")
+
+MLB_lines_split <- away_MLB %>%
+  rbind(home_MLB) %>%
+  mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
+```
+
+
+```{r}
+NBA_movement_df <- NBA_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NBA_movement_df <- cbind(Index = 1:nrow(NBA_movement_df), NBA_movement_df)   
+
+NBA_final_line <- NBA_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NBA_previous_lines <- NBA_movement_df %>%
+  anti_join(NBA_final_line, by = "Index")
+```
+
+```{r}
+NBA_final_line <- NBA_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NBA_final_line)[1] <- "away_Final_Line"
+colnames(NBA_final_line)[2] <- "home_Final_Line"
+
+NBA_previous_lines <- NBA_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NBA_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NBA_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+away_NBA <- NBA_previous_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_NBA)[2] <- "money_line"
+colnames(away_NBA)[3] <- "spread"
+colnames(away_NBA)[5] <- "team_total"
+colnames(away_NBA)[6] <- "public_ml"
+colnames(away_NBA)[7] <- "public_spread"
+colnames(away_NBA)[8] <- "public_team_under"
+colnames(away_NBA)[9] <- "public_team_over"
+colnames(away_NBA)[14] <- "Final_line"
+
+away_NBA <- away_NBA %>%
+  mutate(Location = "away")
+
+home_NBA <- NBA_previous_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_NBA)[2] <- "money_line"
+colnames(home_NBA)[3] <- "spread"
+colnames(home_NBA)[5] <- "team_total"
+colnames(home_NBA)[6] <- "public_ml"
+colnames(home_NBA)[7] <- "public_spread"
+colnames(home_NBA)[8] <- "public_team_under"
+colnames(home_NBA)[9] <- "public_team_over"
+colnames(home_NBA)[14] <- "Final_line"
+
+home_NBA <- home_NBA %>%
+  mutate(Location = "home")
+
+NBA_lines_split <- away_NBA %>%
+  rbind(home_NBA) %>%
+  mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
+```
+
+
+```{r}
+NHL_movement_df <- NHL_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+NHL_movement_df <- cbind(Index = 1:nrow(NHL_movement_df), NHL_movement_df)   
+
+NHL_final_line <- NHL_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+NHL_previous_lines <- NHL_movement_df %>%
+  anti_join(NHL_final_line, by = "Index")
+```
+
+```{r}
+NHL_final_line <- NHL_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(NHL_final_line)[1] <- "away_Final_Line"
+colnames(NHL_final_line)[2] <- "home_Final_Line"
+
+NHL_previous_lines <- NHL_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(NHL_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+NHL_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+```
+
+```{r}
+away_NHL <- NHL_previous_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_NHL)[2] <- "money_line"
+colnames(away_NHL)[3] <- "spread"
+colnames(away_NHL)[5] <- "team_total"
+colnames(away_NHL)[6] <- "public_ml"
+colnames(away_NHL)[7] <- "public_spread"
+colnames(away_NHL)[8] <- "public_team_under"
+colnames(away_NHL)[9] <- "public_team_over"
+colnames(away_NHL)[14] <- "Final_line"
+
+away_NHL <- away_NHL %>%
+  mutate(Location = "away")
+
+home_NHL <- NHL_previous_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_NHL)[2] <- "money_line"
+colnames(home_NHL)[3] <- "spread"
+colnames(home_NHL)[5] <- "team_total"
+colnames(home_NHL)[6] <- "public_ml"
+colnames(home_NHL)[7] <- "public_spread"
+colnames(home_NHL)[8] <- "public_team_under"
+colnames(home_NHL)[9] <- "public_team_over"
+colnames(home_NHL)[14] <- "Final_line"
+
+home_NHL <- home_NHL %>%
+  mutate(Location = "home")
+
+NHL_lines_split <- away_NHL %>%
+  rbind(home_NHL) %>%
+  mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
+```
+
+
+```{r}
+compiled_lines <- NFL_previous_lines%>%
+  rbind(NCAAF_previous_lines)
+
+compiled_lines <- compiled_lines %>%
+  rbind(MLB_previous_lines)
+
+compiled_lines <- compiled_lines %>%
+  rbind(NBA_previous_lines)
+
+compiled_lines <- compiled_lines %>%
+  rbind(NHL_previous_lines)
+
+away_compiled <- compiled_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_compiled)[2] <- "money_line"
+colnames(away_compiled)[3] <- "spread"
+colnames(away_compiled)[5] <- "team_total"
+colnames(away_compiled)[6] <- "public_ml"
+colnames(away_compiled)[7] <- "public_spread"
+colnames(away_compiled)[8] <- "public_team_under"
+colnames(away_compiled)[9] <- "public_team_over"
+colnames(away_compiled)[14] <- "Final_line"
+
+away_compiled <- away_compiled %>%
+  mutate(Location = "away")
+
+home_compiled <- compiled_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_compiled)[2] <- "money_line"
+colnames(home_compiled)[3] <- "spread"
+colnames(home_compiled)[5] <- "team_total"
+colnames(home_compiled)[6] <- "public_ml"
+colnames(home_compiled)[7] <- "public_spread"
+colnames(home_compiled)[8] <- "public_team_under"
+colnames(home_compiled)[9] <- "public_team_over"
+colnames(home_compiled)[14] <- "Final_line"
+
+home_compiled <- home_compiled %>%
+  mutate(Location = "home")
+
+
+```
+
+```{r}
+compiled_lines <- compiled_lines %>%
+  mutate("bet_away" = ifelse(ml_away>away_Final_Line, "Yes", "No")) %>%
+  mutate("bet_home" = ifelse(ml_home>home_Final_Line, "Yes", "No"))
+```
+
+```{r}
+compiled_lines_split <- away_compiled %>%
+  rbind(home_compiled) %>%
+  mutate("make_bet" = ifelse(Final_line<money_line, "Yes", "No"))
+```
+
+
+```{r}
+save(compiled_lines, file = "compiled_movement_df.rdata")
+save(compiled_lines_split, file = "compiled_movement_split_df.rdata")
+```
+
+```{r}
+#save(NFL_lines_split, file = "NFL_Data/NFL_movement_split_df.rdata")
+save(NCAAF_lines_split, file = "NCAAF_Data/NCAAF_movement_split_df.rdata")
+save(MLB_lines_split, file = "MLB_Data/MLB_movement_split_df.rdata")
+```
+```{r}
+save(NBA_lines_split, file = "NBA_Data/NBA_movement_split_df.rdata")
+```
+```{r}
+save(NHL_lines_split, file = "NHL_Data/NHL_movement_split_df.rdata")
+```
+

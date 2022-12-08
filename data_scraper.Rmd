@@ -180,7 +180,7 @@ for (season in 2012:2016) {
 ```
 
 ```{r}
-save(nfl_df_early, file = "nfl_df_early.rdata")
+save(nfl_df_early, file = "CLV_Analysis/NFL_Data/nfl_df_early.rdata")
 ```
 
 
@@ -246,11 +246,11 @@ for (season in 2012:2016) {
 ```
 
 ```{r}
-save(ncaaf_2022_df, file = "ncaaf_2022_df.rdata")
+save(ncaaf_2022_df, file = "CLV_Analysis/NCAAF_Data/ncaaf_2022_df.rdata")
 ```
 
 ```{r}
-save(ncaaf_df_early, file = "ncaaf_df_early.rdata")
+save(ncaaf_df_early, file = "CLV_Analysis/NCAAF_Data/ncaaf_df_early.rdata")
 ```
 
 
@@ -310,7 +310,6 @@ for (day in days) {
 load("betting_data.rdata")
 
 betting_data = rbind(betting_data, nba_df)
-save(betting_data, file = "betting_data.rdata")
 ```
 
 # NHL Data
@@ -397,6 +396,7 @@ for (day in days[1431:length(days)]) {
 }
 
 betting_data = rbind(betting_data, mlb_df)
+save(betting_data, file = "CLV_Analysis/betting_data.rdata")
 ```
 
 

@@ -1,0 +1,683 @@
+---
+title: "Intro to Plotly"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+date: '2022-09-21'
+author: "Declan Elias and Joe Margolis"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This activity will give and introduction to making interactive, publication-quality graphs using Plotly's R graphing library. We will focus on using Plotly to create plots using machine learning models.
+
+In this activity you will learn: 
+- Create displays for Linear Regression 
+- Create Error and Residual Plots
+- Create visualizations for Classification
+
+# Installing Plotly
+
+Installing plotly is simple. Downloading and adding Plotly to your library takes 2 lines of code.
+
+```{r eval=FALSE}
+install.packages("plotly")
+library(plotly)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# this chunk wont show up in the knit but will actually add the package to the library. The chunk above will produce an error if you allow it to run when knitting.
+library(plotly)
+```
+
+# Creating a Basic Scatterplot using Plotly
+
+Creating an interactive scatterplot using Plotly is very simple. Specify a scatterplot by using `type = "scatter"` in the `plot_ly()` function. Notice that the `x` and `y` arguments are specified as formulas with the tilde (\~) operator preceding the variable. This will create a basic scatterplot that allows the user to interact with each individual point.
+
+This example uses a dataframe from the `reshape2` library called `tips` which contains data about the amount of tips a server receives. We plot the `total_bill` variable on the x-axis and the `tips` variable on the y-axis.
+
+```{r}
+library(reshape2) # to load tips data
+data(tips)
+tips$sex <- as.character(tips$sex) # necessary for KNN Classification
+
+fig <- plot_ly(tips, x = ~total_bill, y = ~tip, type = 'scatter', alpha = 0.65, mode = 'markers', name = 'Tips')
+fig
+```
+
+### Create your own scatterplot!
+
+Using the `tips` data create your own scatterplot. We have provided code to guide you
+
+```{r eval=FALSE}
+
+x.variable = #add the variable you want on the x axis
+y.variable = #add the variable you want on the y axis
+
+my.fig <-plot_ly(tips , x = ~x.variable, y = ~y.variable, type = 'scatter', alpha = 0.65, mode = 'markers', name = 'Tips')
+my.fig
+```
+
+
+# ML Regression in R
+
+### Train a Basic Linear Regression Model
+
+To show how plotly can be used for displaying machine learning model, we will first start with a simple linear regression model example. The model will predict tips a server will receive based on various client attributes using the same data as above.
+
+We use the `tidymodels` package to preprocess our data and train our model.
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(tidymodels) # for the fit() function
+
+
+# Set the x and y data
+y <- tips$tip
+X <- tips$total_bill
+
+# Train our model
+lm_model <- linear_reg() %>% 
+  set_engine('lm') %>% 
+  set_mode('regression') %>%
+  fit(tip ~ total_bill, data = tips) 
+
+x_range <- seq(min(X), max(X), length.out = 100)
+x_range <- matrix(x_range, nrow=100, ncol=1)
+xdf <- data.frame(x_range)
+colnames(xdf) <- c('total_bill')
+
+ydf <- lm_model %>% predict(xdf) 
+
+colnames(ydf) <- c('tip')
+xy <- data.frame(xdf, ydf) 
+```
+
+### Visualizing using Plotly
+
+To add a trend line using predicted data from our model, we use the `add_trace()` function. We pipe our figure into the function using `%>%`. We specify our data used for the line as dataframe containing 2 columns, one for the x values, and the second for the predicted y values. We set `mode = 'lines'` to indicate we are adding a line. We can display the same scatterplot with an updated trend line.
+
+```{r}
+fig <- fig %>% add_trace(data = xy, x = ~total_bill, y = ~tip, name = 'Regression Fit', mode = 'lines', alpha = 1)
+fig
+```
+
+### Can You Create A Scatterplot On Your Own?
+
+We have done the preprocessing and fitting. Can you create the scatter plot and add the line yourself? The answers is below if you are having any trouble.
+
+```{r}
+data("iris")
+# Set the x and y data
+y <- iris$Petal.Width
+X <- iris$Petal.Length
+
+# Train our model
+lm_model <- linear_reg() %>% 
+  set_engine('lm') %>% 
+  set_mode('regression') %>%
+  fit(Petal.Width ~ Petal.Length, data = iris) 
+
+x_range <- seq(min(X), max(X), length.out = 150)
+x_range <- matrix(x_range, nrow=150, ncol=1)
+xdf <- data.frame(x_range)
+colnames(xdf) <- c('Petal.Length')
+
+ydf <- lm_model %>% predict(xdf) 
+
+colnames(ydf) <- c('Petal.Width')
+xy <- data.frame(xdf, ydf) 
+```
+
+```{r}
+#Add the plot hear
+```
+
+
+#### Answer
+
+```{r}
+# Create the scatterplot
+iris.fig <- plot_ly(iris, x = ~Petal.Width, y = ~Petal.Length, type = 'scatter', alpha = 0.65, mode = 'markers', name = 'Tips')
+# Add the trend line
+iris.fig <- iris.fig %>% add_trace(data = xy, x = ~Petal.Width, y = ~Petal.Length, name = 'Regression Fit', mode = 'lines', alpha = 1)
+iris.fig
+```
+
+
+### Adding More Color
+
+Using the `add_trace()` function, you can easily color the data points based on a predefined factor. For example, in the following plot we split the data we used in the previous example into a training set and a test set. We can easily use different colors to display the training and test sets to see if the model generalizes well.
+
+We use `tidymodel` again to help us easily split the data and train our new model.
+
+```{r results='hide'}
+set.seed(123)
+tips_split <- initial_split(tips)
+tips_training <- tips_split %>% 
+  training()
+tips_test <- tips_split %>% 
+  testing()
+
+lm_model <- linear_reg() %>% 
+  set_engine('lm') %>% 
+  set_mode('regression') %>%
+  fit(tip ~ total_bill, data = tips_training) 
+
+x_range <- seq(min(X), max(X), length.out = 100)
+x_range <- matrix(x_range, nrow=100, ncol=1)
+xdf <- data.frame(x_range)
+colnames(xdf) <- c('total_bill')
+
+ydf <- lm_model %>%
+  predict(xdf) 
+
+colnames(ydf) <- c('tip')
+xy <- data.frame(xdf, ydf) 
+```
+
+We then first create a simple scatter plot, this time only plotting the training data.
+
+```{r}
+fig <- plot_ly(data = tips_training, x = ~total_bill, y = ~tip, type = 'scatter', name = 'train', mode = 'markers', alpha = 0.65) 
+fig
+```
+
+We can then add the test data to the same scatter plot in a different color by using `add_trace()` again.
+
+```{r}
+fig <- fig %>% 
+  add_trace(data = tips_test, x = ~total_bill, y = ~tip, type = 'scatter', name = 'test', mode = 'markers', alpha = 0.65 )
+
+fig
+```
+
+And then finally we add the trend line.
+
+```{r}
+fig <- fig %>% 
+  add_trace(data = xy, x = ~total_bill, y = ~tip, name = 'prediction', mode = 'lines', alpha = 1)
+fig
+```
+
+### Practice Adding Color!
+
+We have given you the tips data set seperated into male and female, can you plot them on the same plot with total bill on the x axis and tip on the y axis, colored by sex?
+```{r}
+tips.female = tips %>% 
+  filter(sex == "Female")
+
+tips.male = tips %>%
+  filter(sex == "Male")
+# First create the plot of the females
+
+# Then add the plot of the males 
+```
+
+```{r}
+fig <- plot_ly(data = tips.female, x = ~total_bill, y = ~tip, type = 'scatter', name = 'female', mode = 'markers', alpha = 0.65) 
+fig <- fig %>% 
+  add_trace(data = tips.male, x = ~total_bill, y = ~tip, name = 'male', mode = 'markers', alpha = .65)
+fig
+```
+
+
+### KNN
+
+In addition to linear regression, we can also fit a KNN model to our data, which can be easily displayed as well in plotly.
+
+We first train 2 different KNN models.
+
+```{r results='hide'}
+library(kknn)
+# Model #1
+knn_dist <- nearest_neighbor(neighbors = 10, weight_func = 'inv') %>% 
+  set_engine('kknn') %>% 
+  set_mode('regression') %>%
+  fit(tip ~ total_bill, data = tips)
+
+# Model #2
+knn_uni <- nearest_neighbor(neighbors = 10, weight_func = 'rectangular') %>% 
+  set_engine('kknn') %>% 
+  set_mode('regression') %>%
+  fit(tip ~ total_bill, data = tips) 
+
+x_range <- seq(min(X), max(X), length.out = 100)
+x_range <- matrix(x_range, nrow=100, ncol=1)
+xdf <- data.frame(x_range)
+colnames(xdf) <- c('total_bill')
+
+y_dist <- knn_dist %>%
+  predict(xdf) 
+y_uni <- knn_uni %>%
+  predict(xdf) 
+
+colnames(y_dist) <- c('dist')
+colnames(y_uni) <- c('uni')
+xy <- data.frame(xdf, y_dist, y_uni) 
+```
+
+We can then create another scatterplot, using the same methods as before, but this time we color based on sex.
+
+```{r}
+fig <- plot_ly(tips, type = 'scatter', mode = 'markers', colors = c("#FF7F50", "#6495ED")) %>% 
+  add_trace(data = tips, x = ~total_bill, y = ~tip, type = 'scatter', mode = 'markers', color = ~sex, alpha = 0.65) 
+
+fig
+```
+
+We can then add our first KNN fit to the scatterplot, using the same method as with the linear trend.
+
+```{r}
+fig <- fig %>% 
+  add_trace(data = xy, x = ~total_bill, y = ~dist, name = 'Weights: Distance', mode = 'lines', alpha = 1) 
+
+fig
+```
+
+And finally our second KNN fit as well.
+
+```{r}
+fig <- fig %>%
+  add_trace(data = xy, x = ~total_bill, y = ~uni, name = 'Weights: Uniform', mode = 'lines', alpha = 1) 
+fig
+```
+
+### Prediction Error Plots
+
+In certain instances, error plots tell a better story of the data. Just as regression was simple to plot, so are error plots.
+
+### Simple Actual vs Predicted Error Plot
+
+First a simple ggplot is created which displays prediction on the y axis and the truth on the x-axis.
+
+```{r}
+library(ggplot2)
+
+data("iris")
+
+X <- data.frame(Sepal.Width = c(iris$Sepal.Width), Sepal.Length = c(iris$Sepal.Length))
+y <- iris$Petal.Width
+
+lm_model <- linear_reg() %>% 
+  set_engine('lm') %>% 
+  set_mode('regression') %>%
+  fit(Petal.Width ~ Sepal.Width + Sepal.Length, data = iris) 
+
+y_pred <- lm_model %>%
+  predict(X) 
+
+db = cbind(iris, y_pred)
+
+colnames(db)[4] <- "Ground_truth"
+colnames(db)[6] <- "prediction"
+
+x0 = min(y)
+y0 = max(y)
+x1 = max(y)
+y1 = max(y)
+p1 <- ggplot(db, aes(x= Ground_truth, y= prediction  )) +
+  geom_point(aes(color = "Blue"), show.legend = FALSE) + geom_segment(aes(x = x0, y = x0, xend = y1, yend = y1 ),linetype = 2)
+p1
+```
+
+The plot is then passed into `ggplotly()` which creates an interactive version of the ggplot.
+
+```{r}
+p1 <-  ggplotly(p1)
+p1
+```
+
+### Residual Plots
+
+Similarly, we can easily display residual plots.
+
+We first create our model and predictions.
+
+```{r}
+data(iris)
+
+X <- iris %>% select(Sepal.Width, Sepal.Length)
+y <- iris %>% select(Petal.Width)
+
+set.seed(0)
+iris_split <- initial_split(iris, prop = 3/4)
+iris_training <- iris_split %>% 
+  training()
+iris_test <- iris_split %>% 
+  testing()
+
+train_index <- as.integer(rownames(iris_training))
+test_index <- as.integer(rownames(iris_test))
+
+iris[train_index,'split'] = 'train'
+iris[test_index,'split'] = 'test'
+
+lm_model <- linear_reg() %>% 
+  set_engine('lm') %>% 
+  set_mode('regression') %>%
+  fit(Petal.Width ~ Sepal.Width + Sepal.Length, data = iris_training) 
+
+prediction <- lm_model %>%
+  predict(X) 
+colnames(prediction) <- c('prediction')
+iris = cbind(iris, prediction)
+residual <- prediction - iris$Petal.Width
+colnames(residual) <- c('residual')
+iris = cbind(iris, residual)
+```
+
+We then create our interactive residual plot by first creating a simple ggplot and passing it through `ggplotly`.
+
+```{r}
+scatter <- ggplot(iris, aes(x = prediction, y = residual, color = split)) + 
+  geom_point() + 
+  geom_smooth(formula=y ~ x, method=lm, se=FALSE) 
+
+scatter <- ggplotly(p = scatter, type = 'scatter')
+scatter
+```
+
+If we want to get fancy, we can create a violin plot and add it to our residual plot.
+
+```{r warning=FALSE}
+violin <- iris %>%
+  plot_ly(x = ~split, y = ~residual, split = ~split, type = 'violin' )
+
+s <- subplot(
+  scatter,
+  violin,
+  nrows = 1, heights = c(1), widths = c(0.65, 0.35), margin = 0.01,
+  shareX = TRUE, shareY = TRUE, titleX = TRUE, titleY = TRUE
+)
+
+plotly::layout(s, showlegend = FALSE) # necessary to ensure it uses layout function from plotly instead of graphics
+```
+
+
+# ML Classification in R
+
+### KNN Classification
+
+We can also use what we have found from our KNN models, and include some of the categorical variables in order to analyze their effect on tips and total bill costs
+
+First, lets run a similar process as to our previous KNN regression, creating a training and testing data set and adding a variable to the main data set that tells us whether the observation is from the training or testing data set and which gender they are
+
+```{r}
+# Create Training and Testing Data Sets
+
+tips$sex <- as.character(tips$sex) # tips represents the data set being used. sex represents the categorical output variable being studied
+set.seed(123)
+tips_split <- initial_split(tips, prop = 3/4)  # Creates a data set with training and testing data <- name comes from data set
+tips_training <- tips_split %>%  # Creates a training data set <- name comes from data set
+  training()
+tips_test <- tips_split %>%  # Creates a testing data set <- name comes from data set
+  testing()
+
+# Helps us create a variable for Table and Gender Combination
+
+train_index <- as.integer(rownames(tips_training))
+test_index <- as.integer(rownames(tips_test))
+tips[train_index,'split'] = 'Training'
+tips[test_index,'split'] = 'Testing'
+tips$Table_Gender <- paste(tips$split,tips$sex) # Remember tips and sex should be interchanged for your data set/question
+```
+
+
+Now we can plot this in a scatterplot using shaped and dotted shapes to recreate the previous scatterplot checking female and male tip and bill costs, onky this time now we are able to check how representative out testing data is compared to the training data. The goal is to find some pattern similarities between the testing and training data in order to validate the new training data
+
+```{r}
+# Graph the Training and Testing Datasets Together
+
+fig <- plot_ly(data = tips, x = ~total_bill, y = ~tip, type = 'scatter', mode = 'markers',alpha = 0.5, symbol = ~Table_Gender, symbols = c('square','circle','square-dot','circle-dot'),
+               marker = list(size = 12,
+                             color = 'lightyellow',
+                             line = list(color = 'black',width = 1)))
+
+fig
+```
+
+
+```{exercise}
+Choose a new categorical output variable and create a similar visualization.
+
+*Tip* If more than two levels of the output variable the basic shapes are as follows: circle , square , diamond , cross , x , triangle , pentagon , hexagram , star , diamond , hourglass , bowtie , asterisk , hash , y , and line .
+```
+
+#### Answer
+
+```{r}
+# Create Training and Testing Data Sets
+
+tips$smoker <- as.character(tips$smoker) # tips represents the data set being used. sex represents the categorical output variable being studied
+set.seed(123)
+tips_split <- initial_split(tips, prop = 3/4)  # Creates a data set with training and testing data <- name comes from data set
+tips_training <- tips_split %>%  # Creates a training data set <- name comes from data set
+  training()
+tips_test <- tips_split %>%  # Creates a testing data set <- name comes from data set
+  testing()
+
+# Helps us create a variable for Table and Gender Combination
+
+train_index <- as.integer(rownames(tips_training))
+test_index <- as.integer(rownames(tips_test))
+tips[train_index,'split'] = 'Training'
+tips[test_index,'split'] = 'Testing'
+tips$Table_Smoker <- paste(tips$split,tips$smoker) # Remember tips and sex should be interchanged for your data set/question
+```
+
+```{r}
+# Graph the Training and Testing Datasets Together
+
+fig <- plot_ly(data = tips, x = ~total_bill, y = ~tip, type = 'scatter', mode = 'markers',alpha = 0.5, symbol = ~Table_Smoker, symbols = c('square','circle','square-dot','circle-dot'),
+               marker = list(size = 12,
+                             color = 'lightyellow',
+                             line = list(color = 'black',width = 1)))
+
+fig
+```
+
+### Visualizing Confidence Scores of Test Data
+
+The next step is to visualize our confidence in each of our prediction points for the test data. To do that we can produce a similar scatter plot to the one above, only this one removes the training data from the set and then has a color gradient to display the confidence in the testing prediction based on the distance calculated in the KNN regression
+
+```{r}
+# Recreating Training and Testing Data Sets
+
+tips$sex <- as.factor(tips$sex)  # tips comes from the data set. sex comes from the output variable being modeled
+
+tips_split <- initial_split(tips, prop = 3/4) # Creates a data set with training and testing data <- name comes from data set
+train_data <- training(tips_split) # Creates a training data set <- name comes from data set
+test_data <- testing(tips_split) # Creates a testing data set <- name comes from data set
+
+# Remove the output variable from the test data to remove it from calculation to be compared back to
+x_test <- test_data %>% select(-sex)  
+y_test <- test_data %>% select(sex)
+
+# Running a K Nearest Neighbors Classification on the Data
+knn_dist <- nearest_neighbor(neighbors = 15, weight_func = 'rectangular') %>% 
+  set_engine('kknn') %>% 
+  set_mode('classification') %>% # Set to classification so it is known the output is categorical and regression is not run
+  fit(sex~., data = train_data) # sex represents output variable
+yscore <- knn_dist %>%
+  predict(x_test, type = 'prob')
+colnames(yscore) <- c('yscore0','yscore1')
+yscore <- yscore$yscore1
+
+pdb <- cbind(x_test, y_test)
+pdb <- cbind(pdb, yscore)
+
+# Graph The Confidence Scores
+
+fig <- plot_ly(data = pdb,x = ~total_bill, y = ~tip, type = 'scatter', mode = 'markers',color = ~yscore, colors = 'RdBu', symbol = ~sex, split = ~sex, symbols = c('square-dot','circle-dot'), 
+               marker = list(size = 12, line = list(color = 'black', width = 1)))
+
+fig
+```
+
+```{exercise}
+Once again, recreate the visualization above. Try using the same variable you used on the graph of the training and testing data.
+```
+
+#### Answer
+
+```{r}
+# Recreating Training and Testing Data Sets
+
+tips$smoker <- as.factor(tips$smoker)  # tips comes from the data set. sex comes from the output variable being modeled
+
+tips_split <- initial_split(tips, prop = 3/4) # Creates a data set with training and testing data <- name comes from data set
+train_data <- training(tips_split) # Creates a training data set <- name comes from data set
+test_data <- testing(tips_split) # Creates a testing data set <- name comes from data set
+
+# Remove the output variable from the test data to remove it from calculation to be compared back to
+x_test <- test_data %>% select(-smoker)  
+y_test <- test_data %>% select(smoker)
+
+# Running a K Nearest Neighbors Classification on the Data
+knn_dist <- nearest_neighbor(neighbors = 15, weight_func = 'rectangular') %>% 
+  set_engine('kknn') %>% 
+  set_mode('classification') %>% # Set to classification so it is known the output is categorical and regression is not run
+  fit(smoker~., data = train_data) # sex represents output variable
+yscore <- knn_dist %>%
+  predict(x_test, type = 'prob')
+colnames(yscore) <- c('yscore0','yscore1')
+yscore <- yscore$yscore1
+
+pdb <- cbind(x_test, y_test)
+pdb <- cbind(pdb, yscore)
+
+# Graph The Confidence Scores
+
+fig <- plot_ly(data = pdb,x = ~total_bill, y = ~tip, type = 'scatter', mode = 'markers',color = ~yscore, colors = 'RdBu', symbol = ~smoker, split = ~smoker, symbols = c('square-dot','circle-dot'), 
+               marker = list(size = 12, line = list(color = 'black', width = 1)))
+
+fig
+```
+
+### Estimating Probability of a Factor With Contour Map
+
+To create a map showing probabilities of the observation point being a male or a female based on bill total and tip total, we can create a contour map. For this we need to load in the `pracma` package
+
+```{r}
+library(plotly)
+library(pracma)
+library(kknn)
+library(tidymodels)
+```
+
+
+```{r}
+# Create a dataset that only contains the main variables of interest for the visualization.
+
+tips_original <- tips %>%
+  select(total_bill, tip, sex) # total_bill and tip are the two input variables. sex is the output
+
+tips$sex <- as.character(tips$sex) 
+set.seed(123)
+tips_split <- initial_split(tips, prop = 3/4) # Creates a data set with training and testing data <- name comes from data set
+tips_training <- tips_split %>% #  Creates a training data set <- name comes from data set
+  training()
+tips_test <- tips_split %>% # Creates a testing data set <- name comes from data set
+  testing()
+train_index <- as.integer(rownames(tips_training))
+test_index <- as.integer(rownames(tips_test))
+
+# Created a mesh grid layout for the graph to be contoured
+
+mesh_size = .02
+margin = 0.25
+x_min =  min(tips$total_bill) - margin # tips$total_bill represents the x variable
+x_max = max(tips$total_bill) + margin
+y_min = min(tips$tip) - margin # tips$tip represents the y variable
+y_max = max(tips$tip) + margin
+xrange <- seq(x_min, x_max, mesh_size)
+yrange <- seq(y_min, y_max, mesh_size)
+xy <- meshgrid(x = xrange, y = yrange)
+xx <- xy$X
+yy <- xy$Y
+
+tips_original$sex <- as.factor(tips_original$sex)
+
+knn_dist <- nearest_neighbor(neighbors = 15, weight_func = 'rectangular') %>%
+  set_engine('kknn') %>%
+  set_mode('classification') %>%
+  fit(sex~., data = tips_original) # make sure to use the data set with only the variable of interest and not the original set
+
+dim_val <- dim(xx)
+xx1 <- matrix(xx, length(xx), 1)
+yy1 <- matrix(yy, length(yy), 1)
+final <- data.frame(xx1, yy1)
+colnames(final) <- c('total_bill','tip') # rename the two columns back to the names of variables needed
+
+pred <- knn_dist %>%
+  predict(final, type = 'prob')
+
+predicted <- pred$.pred_Female # Check the pred variable and replace the female part with the first variable in the set
+Z <- matrix(predicted, dim_val[1], dim_val[2])
+
+fig <- plot_ly(x = xrange, y= yrange, z = Z, colorscale='RdBu', type = "contour")
+fig
+```
+
+```{exercise}
+Finish up with a contour graph using the output variable you have used on the last two visualizations. This one has left out titles and axes labels so combine what has been learned from other visualizations to add that information to this type of table.
+```
+
+#### Answer
+
+```{r}
+# Create a dataset that only contains the main variables of interest for the visualization.
+
+tips_original <- tips %>%
+  select(total_bill, tip, smoker) # total_bill and tip are the two input variables. sex is the output
+
+tips$smoker <- as.character(tips$smoker) 
+set.seed(123)
+tips_split <- initial_split(tips, prop = 3/4) # Creates a data set with training and testing data <- name comes from data set
+tips_training <- tips_split %>% #  Creates a training data set <- name comes from data set
+  training()
+tips_test <- tips_split %>% # Creates a testing data set <- name comes from data set
+  testing()
+train_index <- as.integer(rownames(tips_training))
+test_index <- as.integer(rownames(tips_test))
+
+# Created a mesh grid layout for the graph to be contoured
+
+mesh_size = .02
+margin = 0.25
+x_min =  min(tips$total_bill) - margin # tips$total_bill represents the x variable
+x_max = max(tips$total_bill) + margin
+y_min = min(tips$tip) - margin # tips$tip represents the y variable
+y_max = max(tips$tip) + margin
+xrange <- seq(x_min, x_max, mesh_size)
+yrange <- seq(y_min, y_max, mesh_size)
+xy <- meshgrid(x = xrange, y = yrange)
+xx <- xy$X
+yy <- xy$Y
+
+tips_original$smoker <- as.factor(tips_original$smoker)
+
+knn_dist <- nearest_neighbor(neighbors = 15, weight_func = 'rectangular') %>%
+  set_engine('kknn') %>%
+  set_mode('classification') %>%
+  fit(smoker~., data = tips_original) # make sure to use the data set with only the variable of interest and not the original set
+
+dim_val <- dim(xx)
+xx1 <- matrix(xx, length(xx), 1)
+yy1 <- matrix(yy, length(yy), 1)
+final <- data.frame(xx1, yy1)
+colnames(final) <- c('total_bill','tip') # rename the two columns back to the names of variables needed
+
+pred <- knn_dist %>%
+  predict(final, type = 'prob')
+
+predicted <- pred$.pred_Yes # Check the pred variable and replace the female part with the first variable in the set
+Z <- matrix(predicted, dim_val[1], dim_val[2])
+
+fig <- plot_ly(x = xrange, y= yrange, z = Z, colorscale='RdBu', type = "contour")
+fig
+```

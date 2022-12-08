@@ -66,7 +66,7 @@ create_ml_prob_hist = function(league) {
            y = "Count")
   )
 }
-load("MLB_movement_split_df.rdata")
+load("CLV_Analysis/MLB_Data/MLB_movement_split_df.rdata")
 MLB_Full <- MLB_lines_split %>%
   select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) %>%
   na.omit()
@@ -128,7 +128,7 @@ This graph shows the implied win probability vs. true win probability over time.
 
 #### How Data Set Is Created
 ```{r eval=FALSE, include=TRUE}
-load("betting_data.rdata")
+load("CLV_Analysis/betting_data.rdata")
 ml_data_all = betting_data %>%
   select(id, away_team_id, home_team_id, winning_team_id, league_name, season, ml_away, ml_home, ml_home_implied_prob, ml_away_implied_prob, book_id) %>%
   filter(!is.na(winning_team_id),
@@ -201,7 +201,7 @@ This plot shows the densities of win / loss probabilities for the best performin
 
 ```{r}
 set.seed(121)
-load("NFL_movement_split_df.rdata")
+load("CLV_Analysis/NFL_Data/NFL_movement_split_df.rdata")
 NFL_Full <- NFL_lines_split %>%
   select(-Index, -inserted, -league, -id, -Final_line, -public_team_under, -book_id) 
 ```
