@@ -1,6 +1,6 @@
-average_books = function(league_ml) {
+average_books = function(league_ml, league) {
   
-  get_book_data_clean = function(league) {
+  get_book_data_clean = function() {
     load("betting_data/book_id_data.rdata")
     
     book_data_clean = BOOK_ID_DATA %>%
@@ -74,7 +74,7 @@ average_books = function(league_ml) {
               ml_home = prob.to.line(mean(home_prob_vig)),
               ml_away = prob.to.line(mean(away_prob_vig))) %>%
     ungroup() %>%
-    mutate(league = "ncaaf")
+    mutate(league = league)
   
   parent_name_list = league_ml$parent_name %>% unique()
   

@@ -50,17 +50,11 @@ clean_data = function(league) {
   
   consensus_data = league_ml %>% filter(book_id == 15)
   
-  get_consensus_win_prob = function(this.id) {
-    return(
-      consensus_data %>%
-        filter(id == this.id) %>%
-        getElement("home_prob_fair")
-    )
-  }
+  consensus_data = consensus_data %>%
+    mutate(consensus = home_prob_fair) %>%
+    select(id, consensus)
   
-  league_ml = league_ml %>%
-    group_by(id) %>%
-    mutate(consensus = get_consensus_win_prob(id))
+  league_ml = right_join(league_ml, consensus_data, by = "id")
   
   league_ml = league_ml %>%
     filter(!is.na(consensus))
@@ -91,4 +85,32 @@ clean_data = function(league) {
     filter(!is.na(home_prob_fair))
   
   return(league_ml)
+}
+
+final_clean = function(ml_data, start_year, end_year, n) {
+  ml_data = ml_data %>%
+    filter(!is.na(parent_name))
+  
+  # Remove consensus and open
+  ml_data = ml_data %>%
+    filter(!(parent_name %in% c("Consensus", "Open")))
+  
+  
+  # Only get the books with 150+ observations every year from 2018-2022
+  ml_data = ml_data %>%
+    filter(season > (start_year - 1)) %>%
+    group_by(season, parent_name) %>%
+    filter(n() >= n) %>%
+    ungroup(season) %>%
+    filter(all(start_year:end_year %in% season)) %>%
+    ungroup()
+  
+  # Only get games that have a line for each observation
+  
+  ml_data = ml_data %>%
+    group_by(id) %>%
+    filter(all(ml_data$parent_name %>% unique() %in% parent_name)) %>%
+    ungroup()
+  
+  return(ml_data)
 }

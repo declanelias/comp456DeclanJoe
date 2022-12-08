@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(tidymodels)
 library(tidyverse)
+library(glmnet)
 ```
 
 
@@ -49,8 +50,52 @@ ncaaf_ml = average_books(ncaaf_raw)
 
 save(ncaaf_ml, file = "betting_data/ncaaf_ml_clean.rdata")
 
-load("betting_data/ncaaf_ml_clean.rdata")
+## HAVE TO CLEAN RAW DATA (THIS LOAD LEAGUE FUNCTION LOADS ML_DATA)
+nba_ml = load_league("nba") %>% final_clean(2017, 2021, 500)
+ncaab_ml = load_league("ncaab") %>% final_clean(2017, 2021, 450)
+nhl_ml = load_league("nhl") %>% final_clean(2017, 2021, 900)
+nfl_ml = load_league("nfl") %>% final_clean(2017, 2021, 140)
+mlb_ml = load_league("mlb") %>% final_clean(2017, 2022, 500)
+ncaaf_ml = load_league("ncaaf") %>% final_clean(2018, 2022, 150)
+
+nba_ml = nba_ml %>% select(-c(is_legal))
+save(nba_ml, file = "betting_data/nba_ml_clean.rdata")
+
+ncaab_ml = ncaab_ml %>% select(-c(is_legal))
+save(ncaab_ml, file = "betting_data/ncaab_ml_clean.rdata")
+
+nhl_ml = nhl_ml %>% select(-c(is_legal))
+save(nhl_ml, file = "betting_data/nhl_ml_clean.rdata")
+
+nfl_ml = nfl_ml %>% select(-c(is_legal))
+save(nfl_ml, file = "betting_data/nfl_ml_clean.rdata")
+
+mlb_ml = mlb_ml %>% select(-c(is_legal))
+save(mlb_ml, file = "betting_data/mlb_ml_clean.rdata")
+
 ```
+
+
+```{r warning=FALSE}
+for (league in c("ncaab", "nhl", "mlb")) {
+  print(paste("started", league))
+
+  raw = clean_data(league)
+  ml = average_books(raw, league)
+  save(ml, file = paste("betting_data/", league, "_ml_clean.rdata", sep = ""))
+  
+  print(paste("finished", league))
+}
+
+raw = clean_data("nba")
+ml = average_books(raw, "nba")
+
+ml %>%
+  group_by(season) %>%
+  summarise(n())
+```
+
+
 
 ## Clean Data
 
@@ -80,7 +125,42 @@ ncaaf_ml = ncaaf_ml %>%
 ```
 
 
-## First Test: Using the Brier Score as a weighted average
+```{r}
+get_brier_score(ncaaf_ml %>% filter(season == 2019)) %>%
+  arrange(desc(brier_skill_score))
+
+get_brier_score(ncaaf_ml %>% filter(season == 2020)) %>%
+  arrange(desc(brier_skill_score))
+
+get_brier_score(ncaaf_ml %>% filter(season == 2021)) %>%
+  arrange(desc(brier_skill_score))
+
+get_brier_score(ncaaf_ml %>% filter(season == 2022)) %>%
+  arrange(desc(brier_skill_score))
+
+get_brier_score(ncaaf_ml) %>%
+  arrange(desc(brier_skill_score))
+```
+
+
+## Using the top Performing Book
+
+#### Create the Testing and Training Set
+
+```{r}
+data_caesars = ncaaf_ml %>%
+  filter(season == 2022)
+```
+
+```{r}
+data_caesars = data_caesars %>%
+  select(-c(brier_score, away_prob_fair, home_prob_vig, away_prob_vig, ml_home, ml_away, book_id)) %>%
+  pivot_wider(names_from = parent_name, values_from = home_prob_fair)
+```
+
+
+
+## Using the Brier Score as a weighted average
 
 #### Create the Testing and Training Sets
 ```{r}
@@ -203,22 +283,27 @@ ev_data = test_data_wa %>%
          ev_away = calc_ev(model_away_fair, model_home_fair, ml_away, 100))
 ```
 
-# Logistic Regression
+## Logistic Regression
 
 ```{r}
 library(tidymodels)
 library(probably)
+
+tidymodels_prefer()
 ```
 
 ```{r}
 logreg_ncaaf = ncaaf_ml %>%
   select(-c(brier_score, away_prob_fair, home_prob_vig, away_prob_vig, ml_home, ml_away, book_id)) %>%
   pivot_wider(names_from = parent_name, values_from = home_prob_fair) %>%
-  mutate(home_team_win = as.factor(as.integer(home_team_win)))
+  mutate(home_team_win = as.factor((home_team_win)))
 
 logreg_train = logreg_ncaaf %>%
   filter(season != 2022) %>%
-  select(-c(id, season, league))
+  select(-c(id, season, league)) %>%
+  mutate(home_team_win = as.factor(home_team_win))
+
+levels(logreg_train$home_team_win)
 
 logreg_test = logreg_ncaaf %>%
   filter(season == 2022) %>%
@@ -252,10 +337,15 @@ logistic_output = logreg_test %>%
   bind_cols(predict(log_fit, new_data = logreg_test, type = 'prob'))
 
 logistic_output <- logistic_output %>%
-  mutate(.pred_win = make_two_class_pred(.pred_0, levels(home_team_win), threshold = .5))
+  mutate(.pred_win = make_two_class_pred(.pred_FALSE, levels(home_team_win), threshold = .5))
 
-logistic_output  %>%
+confusion_mat = logistic_output  %>%
   conf_mat(truth = home_team_win, estimate = .pred_win)
+
+tn = confusion_mat$table[1]
+fn = confusion_mat$table[3]
+tp = confusion_mat$table[4]
+fp = confusion_mat$table[2]
 
 log_metrics <- metric_set(yardstick::sens, yardstick::spec, yardstick::accuracy)
 
@@ -266,6 +356,12 @@ logistic_output %>%
 
 ```{r}
 brier_score = mean((logistic_output$.pred_1 - (as.numeric(logistic_output$home_team_win) - 1)) ^ 2)
-brie_ss = get_brier_ss_of_book(brier_score)
+brier_ss = get_brier_ss_of_book(brier_score)
+```
+
+
+
+```{r}
+glmnet(x = private$data_test_long$home_team_win, y = private$data_test_long %>% select(-c(id, home_team_win, brier_score, season)), family = "binomial")
 ```
 
