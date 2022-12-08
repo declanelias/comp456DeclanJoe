@@ -176,7 +176,7 @@ cfb %>%
   group_by(away_conference) %>%
   summarise(avg.spraed = mean(away_spread))
 
-cfb[,""]
+
 
 ```
 
