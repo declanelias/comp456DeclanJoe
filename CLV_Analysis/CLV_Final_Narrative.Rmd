@@ -1,0 +1,62 @@
+---
+title: "Closing Line Value Modeling Report"
+author: "Joe Margolis and Declan Elias"
+date: '2022-12-10'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidymodels)
+library(tidyverse)
+library(glmnet)
+library(probably)
+library(ggplot2)
+library(sf)
+library(maps)
+library(plotly)
+```
+
+## Introduction
+
+For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com), a site that compiles game lines for all sports, and most importantly, all books to allow for arbitrage gambling to help a person select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he bet on against what the closing line was at game time to see if his bet had a better value than the closing line. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
+
+## What is Sports Betting?
+
+If a game is being played, people are going to bet on it. Humans have been gambling on sports since ancient times, but recent legislation in the United States has allowed sports betting to become legal in 30 states, with many other states in heated debates over legalizing it themselves, launching it into the mainstream. Over $57.2 billion dollars were bet on U.S. licensed sportsbooks in 2021, and that does not take into account offshore websites used by those living in states where sports betting is not yet legal. 
+
+```{r eval=FALSE, message=FALSE, include=FALSE}
+library(albersusa)
+
+us <- usa_composite()
+us_map <- fortify(us, region="name")
+
+legality = read.csv("legality_by_state.csv")
+legality = legality %>%
+  mutate(id = State,
+         In.Person = ifelse(as.logical(Online) & as.logical(In.Person), 0, In.Person),
+         not_legal = if_else(Online == 0 & In.Person == 0 & Pending == 0, 1, 0),
+         ID = tolower(State),
+         status = (Online + 2 * In.Person + 3 * Pending + 4 * not_legal),
+         `Legal Status` = cut(status, breaks = c(0,1,2,3,4), labels = c("Online", "In Person Only", "Pending", "Not Legal")))
+
+
+
+us_map = left_join(us_map, legality, by = "id")
+
+us_map_betting = ggplot() +
+  geom_map(data=us_map, map=us_map,
+           aes(x=long, y=lat, map_id=id, fill = `Legal Status`),
+           color = "white") + 
+  ggthemes::theme_map() + 
+  labs(title = "Sports Betting Legality By State")
+  
+
+save(us_map_betting, file = "graphics/us_map_betting")
+```
+
+```{r include=FALSE}
+load("graphics/us_map_betting")
+plot(us_map_betting)
+```
