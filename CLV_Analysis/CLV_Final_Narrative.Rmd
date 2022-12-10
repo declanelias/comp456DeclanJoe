@@ -16,6 +16,7 @@ library(ggplot2)
 library(sf)
 library(maps)
 library(plotly)
+library(remotes)
 ```
 
 ## Introduction
@@ -24,7 +25,7 @@ For this project, we wanted to investigate ways in which someone could over time
 
 ## What is Sports Betting?
 
-If a game is being played, people are going to bet on it. Humans have been gambling on sports since ancient times, but recent legislation in the United States has allowed sports betting to become legal in 30 states, with many other states in heated debates over legalizing it themselves, launching it into the mainstream. Over $57.2 billion dollars were bet on U.S. licensed sportsbooks in 2021, and that does not take into account offshore websites used by those living in states where sports betting is not yet legal. 
+If a game is being played, people are going to bet on it. Humans have been gambling on sports since ancient times, but recent legislation in the United States has allowed sports betting to become legal in 30 states, with many other states in heated debates over legalizing it themselves as seen in the graphic below displaying which states have legalized sports betting through various platforms. Over $57.2 billion dollars were bet on U.S. licensed sportsbooks in 2021, and that does not take into account offshore websites used by those living in states where sports betting is not yet legal. 
 
 ```{r eval=FALSE, message=FALSE, include=FALSE}
 library(albersusa)
@@ -53,10 +54,11 @@ us_map_betting = ggplot() +
   labs(title = "Sports Betting Legality By State")
   
 
-save(us_map_betting, file = "graphics/us_map_betting")
+save(us_map_betting, file = "Narrative_Graphics/us_map_betting")
 ```
 
-```{r include=FALSE}
-load("graphics/us_map_betting")
+```{r eval=TRUE, include=FALSE}
+load("Narrative_Graphics/us_map_betting")
 plot(us_map_betting)
 ```
+
