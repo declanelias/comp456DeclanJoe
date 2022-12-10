@@ -162,3 +162,21 @@ After understanding how American odds work, the other two columns are pretty str
 
 In football, the spread and the over / under bets are usually regarded as a 50 / 50 bet, however books usually price coinflips at -110 on each side. A line of -110 has an implied probability of 52.38% ($\frac{110}{110 + 100} * 100$), even though the true probability, also known as the "fair" probability should be .5 on each side ($\frac{.5238}{.5238 + .5238} * 100$) This means the sum of the two probabilities of the possible outcomes is 104.76%. The extra 4.76% is known as the "juice" or the "vig", and it is how the books make their profit. If Bettor A places a $110 bet on Navy at +1 and Bettor B places \$110 on Army -1, and Army wins by more than 1, DraftKings will pay \$100 to Bettor B, but collect \$110 from Bettor A, leaving the book with a \$10, or 4.76%, profit. This motivates DraftKings to try to keep equal dollar amounts of bets on each side, meaning that the company will change the spread or the line if there is an imbalance. 
 
+### Implied and Fair Probability Formulas
+
+Implied Probability : $\frac{-1 * \text{Negative American Odds}}{\text{-1 * Negatvie American Odds + 100}}$ or $\frac{100}{\text{ Positive American Odds + 100}}$
+
+Fair Probability : $\text{Fair Probability}_1 =\frac{\text{implied probability}_1}{\text{implied probability}_1 + \text{implied probability}_2}$
+
+## Moving Lines
+
+Due to the "vig" previously discussed, the goal of any book is for at game time to have the distribution of bets from the public be equal on each side. When successful at this, books ensure that they will receive a 4.76% profit on the sum of all bets placed, allowing them to profit regardless of the actual result. Particularly in sports like football where game lines are posted a week in advance, this allows for a lot of time for variation.
+
+<center>
+
+![Line Movement Data Taken from ActionNetwork.com for the Army vs. Navy game on 12/10/22](Narrative_Graphics/ArmyNavyMovement.png)
+
+Using the Army Navy game again as an example, we can notice how frequently the lines change. In the span of roughly three hours, the line was updated ten times, and while this short window shows very small variation in the lines, over the course of a week this can lead to opportunities for large differences in line values.
+
+This variation leads to possible opportunity of maximizing line value if you can predict the direction a line will move.
+
