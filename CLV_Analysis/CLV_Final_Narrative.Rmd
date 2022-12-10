@@ -155,6 +155,7 @@ Sports books offer many different ways to bet on sports, including bets on team 
 <center>
 
 ![Spread, Total, and Money Line options taken from DraftKings.com for the Army vs. Navy game on 12/10/22](Narrative_Graphics/army_navy.png)
+</center>
 
 Take this image, for example. It is a screen shot of an offering from one of the most used books in the U.S., DraftKings.com. It is for a college football game taking place on Saturday, December 10, 2022 between Navy and Army. The money line column is the easiest to understand. A $100 bet on Navy to win at +100 American odds would return \$100 in winnings plus the original \$100 bet, so \$200 in total. A \$120 bet on Army to win at -120 American odds would also win \$100, and return the orignal bet for a total of \$220. 
 
@@ -175,6 +176,7 @@ Due to the "vig" previously discussed, the goal of any book is for at game time 
 <center>
 
 ![Line Movement Data Taken from ActionNetwork.com for the Army vs. Navy game on 12/10/22](Narrative_Graphics/ArmyNavyMovement.png)
+</center>
 
 Using the Army Navy game again as an example, we can notice how frequently the lines change. In the span of roughly three hours, the line was updated ten times, and while this short window shows very small variation in the lines, over the course of a week this can lead to opportunities for large differences in line values.
 
@@ -187,6 +189,7 @@ Eventually, a game has to begin and the pre-game lines will no longer change, re
 <center>
 
 ![Top two observations of Monahan's log to track successful bets based on closing line value taken from OddsJam.com](Narrative_Graphics/CLVCheck.png)
+</center>
 
 For example, this is an example of the log Monahan keeps to track his success rate on his bets. In this, he uses the closing line for Pinnacle as his baseline bet, regardless of the book he is gambling on under the assumption that Pinnacle is the most accurate book available. The first bet was placed on total strikeouts for pitcher Cal Quantrill at over 4.5 (an example of a bet on individual player stats called a "prop bet") at a line of +108. At closing, Pinnacle valued this line at -109. This bet would be deemed as a successful bet for Monahan since the value of +108 is significantly better than -109.
 
