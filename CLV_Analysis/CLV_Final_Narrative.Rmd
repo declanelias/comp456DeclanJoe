@@ -198,3 +198,78 @@ On the other hand the second bet was places through Caesars on the money line of
 ## Research Question
 
 In the following analysis, we will attempt to model the movement of line data to predict which money lines in each of the five major U.S. sports are most likely to decrease in value at closing, giving insight into what lines will result in successful bets and allowing someone to use Closing Line Value as a proactive tool for gambling as opposed to the retroactive way Monahan has implemented it.
+
+## Data Set
+
+### Scraping The Data
+
+Our data was scraped from [ActionNetwork's](actionnetwork.com) historical betting database. The company functions similarly to OddsJam, however they are used by gamblers to keep track of their bets. Meaning they are less inclined to keep their data private as they are not selling it to their customers.
+
+We noticed that everytime a page on ActionNetwork with betting data was loaded, it would send an HTTP request with the url 
+https://api.actionnetwork.com/web/v1/scoreboard/{league}?season={year}&week={week}&bookIds={list of book ids} for NFL and NCAA Football, and https://api.actionnetwork.com/web/v1/{league}?&date={YYYYDDMM}&bookIds={list of book ids} for NCAA Basketball, NBA, NHL, and MLB. This allowed us to easily scrape data using the `httr` and `jsonlite` packages by specifying which week and year for NFL and NCAAF, and the date for the other 3 leagues. The list of book ids was taken from https://api.actionnetwork.com/web/v1/books, which contained all the information about the books available and their corresponding IDs. We were able to get historical betting data across multiple different books from as far back as 2017. The code we wrote to srcape the data can be found at [data_scraper.R]().
+
+To reproduce our scraped data, run the following code. To get the data without having to scrape the code, you can load the dataset `CLV_Analysis/betting_data.rdata`.
+
+```{r, eval=FALSE, echo=TRUE}
+source("data_scraper.R")
+
+save_df = function(league) {
+  books = "all"
+  start_year = 2017
+  end_year = 2022
+  betting_df = get_betting_data(league, books, start_year, end_year)
+  save(betting_df, file = paste("betting_data/", league, "_raw.rdata",sep = ""))
+}
+
+leagues = c("ncaaf", "nfl", "mlb", "nba", "nhl")
+
+map(
+  leagues,
+  save_df
+)
+```
+
+This was the first step to getting a data set with all of the game ids for all of the games from our sports of interest from the year 2017 through 2022 which was compiled into the data set called. We then cleaned that data into a list of game ids for each sport and used the link https://api.actionnetwork.com/web/v1/games/{gameids}/oddshistory to run another scraping function which gathered the line histories for each game and compiled that into line history data sets for each sport. It should be noted that html errors occurred in the years 2018 and 2020 so lists of those game ids have to be cleaned separately and implemented on their own to pick up a chunk of the line histories from those seasons. The code used for this can be found in [line_movement_data.R]().
+
+To scrape this data you can replace the capitalized portions of this code with the respective league you want to scrape or the data sets for each sport can be loaded from the directory `CLV_Analysis/LEAGUE_data/LEAGUE_movement_df`
+
+```{r, eval=FALSE, echo=TRUE}
+LEAGUE <- betting_data %>%
+  filter(league_name == "LEAGUE") %>%
+  filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
+  group_by(id) %>%
+  summarise(t = n())
+
+clean_df = function(df, id) {
+  
+  # select the rows we need
+  df = df %>%
+    select(id, start_time, away_team_id, home_team_id, ml_away, ml_home, spread_away, spread_home, total,away_total, home_total, league_name )
+  
+  # remove unnecessary variables in the odds
+  df = df %>%
+    select(-c(ml_home_public, ml_away_public, spread_home_public, spread_away_public, total_under_public, total_over_public, ml_home_money, ml_away_money, 
+              spread_home_money, total_over_money, total_under_money, num_bets, type, inserted, line_status, spread_away_line, spread_home_line))
+  
+  return(df)
+}
+
+LEAGUE_movement_df = NULL
+
+for (id in LEAGUE$id) {
+  
+  game_id = id
+  url = "https://api.actionnetwork.com/web/v1/games/"
+  url = paste(url, game_id, "/oddshistory")
+  resp = GET(url, user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)    Chrome/106.0.0.0 Safari/537.36"))
+  resp_df = jsonlite::fromJSON(content(resp, "text"))$odds
+  resp_df <- resp_df %>%
+    mutate(id = game_id) %>%
+    mutate(league = "LEAGUE")
+    LEAGUE_movement_df = rbind(LEAGUE_movement_df, resp_df)
+
+  print(paste("finished game",id))
+  }
+```
+
+
