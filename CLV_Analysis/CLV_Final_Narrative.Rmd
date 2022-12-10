@@ -21,7 +21,7 @@ library(remotes)
 
 ## Introduction
 
-For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com), a site that compiles game lines for all sports, and most importantly all books, to allow for arbitrage gambling to help a person select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he bet on against what the closing line was at game time to see if his bet had a better value than the closing line. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
+For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com), a site that compiles game lines for all sports, and most importantly all books, to allow for arbitrage gambling to help a person select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he bet on against what the closing line was at game time to see if his bet had a better value than the closing line. Across his site Monahan has posted his own success from using his arbitrage strategies, posting earnings of $400,000, a value so good that we wanted to investigate his process. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
 
 ## What is Sports Betting?
 
@@ -62,5 +62,92 @@ load("Narrative_Graphics/us_map_betting")
 plot(us_map_betting)
 ```
 
-As sports gambling becomes more prominent, data analysis and modeling has become a huge area of study as people try to make gambling profitable. All over social media, people who have developed models that have shown success (these people are known as "Sharps"), look to sell their picks to the public or average betters, claiming that even with the cost of their picks users will still win enough to be profitable. Unfortunately, many of these sellers only claimed their sharp status with early luck off of a small sample size on their models and at the end of the day, when solely trying to predict winners and losers of a game the Vegas models tend to come out on top.
+As sports gambling becomes more prominent, data analysis and modeling has become a huge area of study as people try to make gambling profitable. All over social media, people who have developed models that have shown success (these people are known as "sharps"), look to sell their picks to the public or average betters, claiming that even with the cost of their picks users will still win enough to be profitable. Unfortunately, many of these sellers only claimed their sharp status with early luck off of a small sample size on their models and at the end of the day, when solely trying to predict winners and losers of a game the Vegas models tend to come out on top.
 
+```{r eval=FALSE, message=FALSE, include=FALSE}
+load("basic_betting_data/nba_raw.rdata")
+nba_raw <- betting_df
+
+nba_times = nba_raw %>% 
+  select(c(id, start_time)) %>% 
+  unique()
+nba_times = nba_times %>% unique()
+rm(nba_raw)
+
+load("basic_betting_data/nhl_raw.rdata")
+nhl_raw <- betting_df
+
+nhl_times = nhl_raw %>%
+  select(c(id, start_time)) %>%
+  unique()
+rm(nhl_raw)
+
+load("basic_betting_data/nfl_raw.rdata")
+nfl_raw <- betting_df
+
+nfl_times = nfl_raw %>%
+  select(c(id, start_time)) %>%
+  unique()
+rm(nfl_raw)
+
+load("basic_betting_data/mlb_raw.rdata")
+mlb_raw <- betting_df
+
+mlb_times = mlb_raw %>%
+  select(c(id, start_time)) %>%
+  unique()
+rm(mlb_raw)
+
+load("basic_betting_data/ncaaf_raw.rdata")
+ncaaf_raw <- betting_df
+
+ncaaf_times = ncaaf_raw %>%
+  select(c(id, start_time)) %>%
+  unique()
+rm(ncaaf_raw)
+
+times = rbind(nhl_times, nba_times,  ncaaf_times, nfl_times, mlb_times)
+save(times, file = "basic_betting_data/game_times.rdata")
+
+load("basic_betting_data/nfl_ml_clean.rdata")
+load("basic_betting_data/ncaaf_ml_clean.rdata")
+load("basic_betting_data/mlb_ml_clean.rdata")
+load("basic_betting_data/nba_ml_clean.rdata")
+load("basic_betting_data/nhl_ml_clean.rdata")
+
+all_sports_raw = rbind(mlb_ml, nba_ml,  nfl_ml, ncaaf_ml, nhl_ml)
+
+all_sports_reliability_plot = all_sports_raw %>%
+  group_by(league) %>%
+  mutate(bins = cut_number(home_prob_fair, 5)) %>%
+  ungroup() %>%
+  group_by(league, bins) %>%
+  summarise(x = mean(home_prob_fair), 
+            y = mean(home_team_win)) %>%
+  ggplot(aes(x=x, y=y, color=league)) +
+  geom_abline(slope = 1, color = "black", lty = 2) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~league) +
+  theme_bw() +
+  labs(title = "Predicted Home Win Probability Vs. True Win Probability", x = "Predicted Win Probability", y = "True Home Win Probability")
+
+save(all_sports_reliability_plot, file = "Narrative_Graphics/all_sports_reliability_plot")
+
+rm(nba_raw, nhl_raw, nfl_raw, mlb_raw, ncaaf_raw, all_sports_raw)
+```
+
+```{r eval=TRUE include=FALSE}
+load("Narrative_Graphics/all_sports_reliability_plot")
+plot(all_sports_reliability_plot)
+```
+
+The graphic above displays a reliability plot for the last 5 full seasons of the MLB, NBA, NCAA Football, NFL, and NHL. The plots display the cumulative frequency of true wins on the y axis, and the average predicted win probabilities on the x axis. Reliability plots indicate how well calibrated predictions made by a model are. The reliability plot of a perfectly calibrated model, meaning a prediction with probability $p$ is correct $p * 100$ percent of the time, will be linear with slope equal to 1. Each plot is almost a straight line, with slight variations, which indicates how incredible sportsbooks are at predict the outcomes.
+
+Most gamblers bet for fun. These are known as "square bettors". They make up the overwhelming majority of bettors and view gambling as a form of entertainment. Most "squares" do not expect to be making money in the long run, and accept the fact that "the house always wins." On the other hand, the "sharp bettors" are the ones trying to create models to surpass the success rates noticed above. This however, is incredibly difficult, and requires a deeply advanced understanding of statistics. Because of the amount of money being gambled daily, books employ incredibly intelligent statisticians to create the prediction models. To beat the books in this way requires beating a team of highly paid, educated, and intelligent data scientists which is impractical.
+
+However, there are other ways that people claim can be profitable in the long run, which we will explore in this project. But before we get any deeper into our analysis, we should go over how sports betting actually works, and introduce some common terminology.
+
+## How Sports Betting Works
+
+Sports books offer many different ways to bet on sports, including bets on team outcomes, player stats, and even live bets which are updated lines that are produced as a game is being playes. Typically the most common types of bets are the team outcome bets which include straight bets, money line bets, and over/under bets. Straight bets refer to betting on a team to win or lose by a certain amount of points, known as the spread. A money line bet means the gambler picks a team to win straight up. An over/under bet is when a bettor gambles on the combined score being above or below a certain number. Over/under bets can also be applied to a singular team in the game, predicting how many points that team alone will score. For each of these bets, the book sets a probability in the form of a line. In the United States the probabilities are displayed through American odds, which come in the form of a number (known as a line) greater than or equal to 100, or less than or equal to -100. Positive values indicate that if a bettor bets $100, they will win the amount of the line plus their original bet. Negative values mean that a bettor has to bet the size of the line to win \$100 plus their original bet. 
