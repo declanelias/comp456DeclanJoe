@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(dplyr)
 library(lubridate)
+library(tidyverse)
 ```
 
 
@@ -54,7 +55,7 @@ ncaaf_raw = load_book("ncaaf")
 ```
 
 ### Get ML Data
-```{r}
+```{r warning=FALSE}
 
 ncaaf_raw = ncaaf_raw %>%
   filter(type == "game")
@@ -62,8 +63,7 @@ ncaaf_raw = ncaaf_raw %>%
 
 ncaaf_ml = ncaaf_raw %>%
   select(-c(teams, draw, total, away_total, away_over, away_under, home_total, 
-            home_over, home_under, ml_home_public, ml_away_public, ml_home_money, 
-            ml_away_money, spread_away_money, line_status, spread_away, spread_home, 
+            home_over, home_under, line_status,
             spread_away_line, spread_home_line, over, under))
 
 ncaaf_ml = ncaaf_ml %>%
@@ -74,79 +74,49 @@ ncaaf_ml = ncaaf_ml %>%
          away_prob_fair = 1 - home_prob_fair,
          home_team_win = if_else(winning_team_id == home_team_id, TRUE, FALSE),
          home_prob_vig = line.to.prob(ml_home) / 100,
-         away_prob_vig = line.to.prob(ml_away) / 100)
-
-ncaaf_ml = ncaaf_ml %>%
-  mutate(inserted = ymd_hms(inserted),
-         start_time = ymd_hms(start_time))
-
-ncaaf_ml %>%
-  select(c(inserted, start_time, ml_home, ml_away)) %>%
-  view()
-
-ncaaf_ml %>%
-  group_by(id) %>%
-  summarise(max_dif = max(na.omit(home_prob_fair)) - mean(na.omit(home_prob_fair)),
-            min_dif = min(na.omit(home_prob_fair)) - mean(na.omit(home_prob_fair))) %>%
-  view()
-
-ncaaf_ml %>%
-  filter(id == 105766)
-```
+         away_prob_vig = line.to.prob(ml_away) / 100,
+         brier_score = (home_prob_fair - home_team_win) ^ 2)
 
 
-
-```{r}
-
-(ymd_hms("2021-12-05 04:16:03") - ymd_hms("2021-12-05 02:16:02"))
-
-test = ncaaf_legal %>%
-  filter(id == 105646)
-
-test %>%
-  group_by(id) %>%
-  summarise()
-```
-
-
-
-
-```{r}
-ncaaf_ml %>%
-  group_by(season, book_id) %>%
-  summarise(n())
-```
-
-
-
-
-```{r}
-consensus_ml = ncaaf_ml %>%
-  filter(book_id == 15)
+consensus_data = ncaaf_ml %>% filter(book_id == 15)
 
 get_consensus_win_prob = function(this.id) {
-  return((consensus_ml %>%
-           filter(book_id == 15,
-                  id == this.id))$home_prob_fair)
+  return(
+    consensus_data %>%
+      filter(id == this.id) %>%
+      getElement("home_prob_fair")
+  )
 }
 
+ncaaf_ml = ncaaf_ml %>%
+  group_by(id) %>%
+  mutate(consensus = get_consensus_win_prob(id))
+
+ncaaf_ml = ncaaf_ml %>%
+  filter(!is.na(consensus))
+
+ncaaf_ml = ncaaf_ml %>%
+  mutate(home_prob_fair = if_else( abs(home_prob_fair - consensus) > .2,
+                                   1 - home_prob_fair,
+                                   home_prob_fair),
+         away_prob_fair = 1 - home_prob_fair)
+
+ncaaf_ml = ncaaf_ml %>%
+  mutate(home_prob_vig = if_else( abs(home_prob_vig - consensus) > .2,
+                                   1 - home_prob_vig,
+                                   home_prob_vig),
+         away_prob_vig = 1 - home_prob_vig)
+
+ncaaf_ml = ncaaf_ml %>%
+  mutate(home_prob_fair = ifelse( abs(home_prob_fair - consensus) > .2,
+                                   NA,
+                                   home_prob_fair)) %>%
+  filter(!is.na(home_prob_fair))
 
 
 
-ncaaf_ml %>%
-  group_by(id, book_id) %>%
-  mutate(temp_var = if_else(
-    abs(home_prob_fair - get_consensus_win_prob(id)) > .2,
-    home_prob_fair,
-    0))
+save(ncaaf_ml, file = "betting_data/ncaaf_ml.rdata")
 ```
 
 
 
-
-For each book
-  if  home_win_prob[book] - home_win_prob[consensus] > .2
-    switch(home_prob with away_prob)
-  
-  if home_win_prob[book] - home_win_prob[consensus] > .2
-    remove that observation

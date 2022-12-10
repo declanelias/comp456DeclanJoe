@@ -75,7 +75,7 @@ book_data_clean = book_data_clean %>%
 #### Helper function to load the book_data
 
 ```{r}
-load_book = function(league) {
+load_league = function(league) {
     file = paste("betting_data/", league, "_ml.rdata", sep = "")
     env = new.env()
     nm = load(file, env)
@@ -89,7 +89,7 @@ load_book = function(league) {
 
 #### Load the data
 ```{r}
-ncaaf_data = load_book("ncaaf")
+ncaaf_data = load_league("ncaaf")
 ```
 
 #### Average the data
@@ -104,13 +104,15 @@ ncaaf_data = left_join(ncaaf_data, parent_name_data, by = "book_id")
 
 ncaaf_data = ncaaf_data %>%
   group_by(id, parent_name) %>%
-  summarise(home_team_win = if_else(mean(favorite_home) > .5, TRUE, FALSE),
-            favorite_win_prob = mean(favorite_win_prob),
-            favorite_home = if_else(mean(favorite_home) > .5, TRUE, FALSE),
-            favorite_win = if_else(mean(favorite_home) > .5, TRUE, FALSE),
+  summarise(home_team_win = first(home_team_win),
             brier_score = mean(brier_score),
-            season = mean(season)) %>%
-  ungroup()
+            season = first(season),
+            ml_away = mean(ml_away),
+            ml_home = mean(ml_home),
+            home_prob_fair = mean(home_prob_fair),
+            away_prob_fair = mean(away_prob_fair)) %>%
+  ungroup() %>%
+  mutate(league = "ncaaf")
 
 parent_name_list = ncaaf_data$parent_name %>% unique()
 
@@ -118,19 +120,34 @@ parent_name_df = as.data.frame(
   cbind(
     c(1:length(parent_name_list)), 
     parent_name_list)
-  )
+)
 
 colnames(parent_name_df) = c("book_id", "parent_name")
+
+book_legality = book_data_clean %>%
+  select(c(parent_name, is_legal)) %>%
+  distinct() %>%
+  group_by(parent_name) %>%
+  summarise(is_legal = length(which(is_legal)) == 1)
+
+parent_name_df = left_join(parent_name_df, book_legality, by = "parent_name")
 
 ncaaf_data = left_join(ncaaf_data, parent_name_df, by = "parent_name")
 
 ncaaf_data = ncaaf_data %>%
   mutate(book_id = as.numeric(book_id))
 
-
-
 save(ncaaf_data, file = "betting_data/ncaaf_ml_clean.rdata")
 ```
 
 
 ### TODO: the rest of the leagues if i Have time
+
+
+
+
+```{r}
+source("clean_data.R")
+source("book_evaluation.R")
+```
+
