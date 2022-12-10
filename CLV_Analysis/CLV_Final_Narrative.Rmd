@@ -21,7 +21,7 @@ library(remotes)
 
 ## Introduction
 
-For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com), a site that compiles game lines for all sports, and most importantly, all books to allow for arbitrage gambling to help a person select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he bet on against what the closing line was at game time to see if his bet had a better value than the closing line. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
+For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com), a site that compiles game lines for all sports, and most importantly all books, to allow for arbitrage gambling to help a person select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he bet on against what the closing line was at game time to see if his bet had a better value than the closing line. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
 
 ## What is Sports Betting?
 
@@ -57,8 +57,10 @@ us_map_betting = ggplot() +
 save(us_map_betting, file = "Narrative_Graphics/us_map_betting")
 ```
 
-```{r eval=TRUE, include=FALSE}
+```{r eval=TRUE include=FALSE}
 load("Narrative_Graphics/us_map_betting")
 plot(us_map_betting)
 ```
+
+As sports gambling becomes more prominent, data analysis and modeling has become a huge area of study as people try to make gambling profitable. All over social media, people who have developed models that have shown success (these people are known as "Sharps"), look to sell their picks to the public or average betters, claiming that even with the cost of their picks users will still win enough to be profitable. Unfortunately, many of these sellers only claimed their sharp status with early luck off of a small sample size on their models and at the end of the day, when solely trying to predict winners and losers of a game the Vegas models tend to come out on top.
 
