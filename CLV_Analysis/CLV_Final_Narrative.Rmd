@@ -206,9 +206,9 @@ In the following analysis, we will attempt to model the movement of line data to
 Our data was scraped from [ActionNetwork's](actionnetwork.com) historical betting database. The company functions similarly to OddsJam, however they are used by gamblers to keep track of their bets. Meaning they are less inclined to keep their data private as they are not selling it to their customers.
 
 We noticed that everytime a page on ActionNetwork with betting data was loaded, it would send an HTTP request with the url 
-https://api.actionnetwork.com/web/v1/scoreboard/{league}?season={year}&week={week}&bookIds={list of book ids} for NFL and NCAA Football, and https://api.actionnetwork.com/web/v1/{league}?&date={YYYYDDMM}&bookIds={list of book ids} for NCAA Basketball, NBA, NHL, and MLB. This allowed us to easily scrape data using the `httr` and `jsonlite` packages by specifying which week and year for NFL and NCAAF, and the date for the other 3 leagues. The list of book ids was taken from https://api.actionnetwork.com/web/v1/books, which contained all the information about the books available and their corresponding IDs. We were able to get historical betting data across multiple different books from as far back as 2017. The code we wrote to srcape the data can be found at [data_scraper.R]().
+https://api.actionnetwork.com/web/v1/scoreboard/{league}?season={year}&week={week}&bookIds={list of book ids} for NFL and NCAA Football, and https://api.actionnetwork.com/web/v1/{league}?&date={YYYYDDMM}&bookIds={list of book ids} for NCAA Basketball, NBA, NHL, and MLB. This allowed us to easily scrape data using the `httr` and `jsonlite` packages by specifying which week and year for NFL and NCAAF, and the date for the other 3 leagues. The list of book ids was taken from https://api.actionnetwork.com/web/v1/books, which contained all the information about the books available and their corresponding IDs. We were able to get historical betting data across multiple different books from as far back as 2017. 
 
-To reproduce our scraped data, run the following code. To get the data without having to scrape the code, you can load the dataset `CLV_Analysis/betting_data.rdata`.
+The code we wrote to srcape the data can be found at [data_scraper.R](). To reproduce our scraped data, run the following code. To get the data without having to scrape the code, you can load the dataset `CLV_Analysis/betting_data.rdata`.
 
 ```{r, eval=FALSE, echo=TRUE}
 source("data_scraper.R")
@@ -229,9 +229,9 @@ map(
 )
 ```
 
-This was the first step to getting a data set with all of the game ids for all of the games from our sports of interest from the year 2017 through 2022 which was compiled into the data set called. We then cleaned that data into a list of game ids for each sport and used the link https://api.actionnetwork.com/web/v1/games/{gameids}/oddshistory to run another scraping function which gathered the line histories for each game and compiled that into line history data sets for each sport. It should be noted that html errors occurred in the years 2018 and 2020 so lists of those game ids have to be cleaned separately and implemented on their own to pick up a chunk of the line histories from those seasons. The code used for this can be found in [line_movement_data.R]().
+This was the first step to getting a data set with all of the game ids for all of the games from our sports of interest from the year 2017 through 2022 which was compiled into the data set called. We then cleaned that data into a list of game ids for each sport and used the link https://api.actionnetwork.com/web/v1/games/{gameids}/oddshistory to run another scraping function which gathered the line histories for each game and compiled that into line history data sets for each sport. It should be noted that html errors occurred in the years 2018 and 2020 so lists of those game ids have to be cleaned separately and implemented on their own to pick up a chunk of the line histories from those seasons. 
 
-To scrape this data you can replace the capitalized portions of this code with the respective league you want to scrape or the data sets for each sport can be loaded from the directory `CLV_Analysis/LEAGUE_data/LEAGUE_movement_df`
+The code used for this can be found in [line_movement_data.R](). To scrape this data you can replace the capitalized `LEAGUE` parts with the capitalized form of the respective league you want to scrape or the data sets for each sport can be loaded from the directory `CLV_Analysis/LEAGUE_data/LEAGUE_movement_df.rdata`
 
 ```{r, eval=FALSE, echo=TRUE}
 LEAGUE <- betting_data %>%
@@ -270,6 +270,116 @@ for (id in LEAGUE$id) {
 
   print(paste("finished game",id))
   }
+```
+
+### Cleaning the Data For Application
+
+At the next step, we removed any variables that would not be applicable to a user who only has access to the game lines, along with any indexing variables. These were mainly variables that described the public betting distribution on each of the lines including money line, spread, and over/under bets. 
+
+In addition, we split each observation into two, one for the home team and one for the away team in order to replicate the fact that both would be options for someone to bet on.
+
+Finally, we implemented a binary variable `make_bet`. This took the closing money line value and compared it to the money line of each previous input, giving a `Yes` input to observations where money line was greater than the closing money line and a `No` input to those that were less than or equal to the closing line. This gave us the main output variable we will use for our classification predictive modeling for predicting a successful bet.
+
+The code used for this can be found in [line_movement_compiled.R](). To clean the data yourself you can implement the following code, once again replacing the capitalized LEAGUE with the capitalized form of the league name of interest. You can also load the already cleaned data set in the directory `CLV_Analysis/LEAGUE_data/LEAGUE_movement_split_df.rdata`
+
+```{r, eval=FALSE, echo=TRUE}
+LEAGUE_movement_df <- LEAGUE_movement_df %>%
+  mutate(inserted = gsub("T"," ", inserted)) %>%
+  mutate(inserted = gsub("Z","", inserted)) %>%
+  mutate(inserted = strptime(inserted, format = "%Y-%m-%d %H:%M:%S")) %>%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+LEAGUE_movement_df <- cbind(Index = 1:nrow(LEAGUE_movement_df), LEAGUE_movement_df)  
+
+LEAGUE_final_line <- LEAGUE_movement_df %>%
+  group_by(id, book_id) %>%
+  slice(which.max(as.POSIXct(inserted)))
+
+LEAGUE_previous_lines <- LEAGUE_movement_df %>%
+  anti_join(NFL_final_line, by = "Index")
+
+LEAGUE_final_line <- LEAGUE_final_line %>%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(LEAGUE_final_line)[1] <- "away_Final_Line"
+colnames(LEAGUE_final_line)[2] <- "home_Final_Line"
+
+LEAGUE_previous_lines <- LEAGUE_previous_lines %>%
+  group_by(id, book_id) %>%
+  left_join(LEAGUE_final_line, by =  c("id", "book_id" )) %>%
+  ungroup() 
+
+LEAGUE_previous_lines %>%
+  group_by(book_id) %>%
+  summarise(t = n() )
+
+away_LEAGUE <- LEAGUE_previous_lines %>%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_LEAGUE)[2] <- "money_line"
+colnames(away_LEAGUE)[3] <- "spread"
+colnames(away_LEAGUE)[5] <- "team_total"
+colnames(away_LEAGUE)[6] <- "public_ml"
+colnames(away_LEAGUE)[7] <- "public_spread"
+colnames(away_LEAGUE)[8] <- "public_team_under"
+colnames(away_LEAGUE)[9] <- "public_team_over"
+colnames(away_LEAGUE)[14] <- "Final_line"
+
+away_LEAGUE <- away_LEAGUE %>%
+  mutate(Location = "away")
+
+home_LEAGUE <- LEAGUE_previous_lines %>%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_NFL)[2] <- "money_line"
+colnames(home_NFL)[3] <- "spread"
+colnames(home_NFL)[5] <- "team_total"
+colnames(home_NFL)[6] <- "public_ml"
+colnames(home_NFL)[7] <- "public_spread"
+colnames(home_NFL)[8] <- "public_team_under"
+colnames(home_NFL)[9] <- "public_team_over"
+colnames(home_NFL)[14] <- "Final_line"
+
+home_LEAGUE <- home_LEAGUE %>%
+  mutate(Location = "home")
+
+LEAGUE_lines_split <- away_LEAGUE %>%
+  rbind(home_LEAGUE) %>%
+  mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
+```
+
+### Cleaning the Data for Leaks
+
+At first, it seemed as if this was going to be a viable data set to be implemented for modeling, but on first attempt leaks in the data were obvious. Results were giving accuracy measures of up to 96% on the majority of our models, and while it would be great for profit if this were possible, it was apparent that issues in the data were causing this unreasonable success. We pinpointed the first issue to be  that keeping each change of the line data in the data set made it too easy for the models to just track the movement of the line based on the previous input and make a much more accurate prediction of its direction, something that would not be applicable to a gambler who does not have access to the previous line values. To remedy this, we randomly sampled one of the previous line observations from each game so that the models could not trace through the full movement of that line. 
+
+The next leak was being caused by trying to make a model that did not distinguish between home and away teams. Since the all of the lines are symmetric between home and away teams, and if say the home line was increasing in value then the away line would be decreasing, the models could pick up that if a certain line was saying yes to placing the bet, there was another line that was the opposite of that in the data set that would be a no bet. To fix this we had to split the data again into two data sets, one for home teams and one for away teams and run separate models on each.
+
+This cleaning was run at the front end of all of the final modeling files which can be found in the directory `CLV_Analysis/LEAGUE_CLV_Analysis.Rmd`. To run this cleaning yourself you can implement the following code with the same replacement techniques as before.
+
+```{r, eval=FALSE, echo=TRUE}
+# Home Data set
+LEAGUE_Sample <- LEAGUE_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+LEAGUE_Home <- LEAGUE_Sample %>%
+  filter(Location == 'home')
+
+LEAGUE_Home = subset(LEAGUE_Home, select = -c(id,book_id, league, Location) )
+
+# Away Data Set
+LEAGUE_Sample <- LEAGUE_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+LEAGUE_Away <- LEAGUE_Sample %>%
+  filter(Location == 'away')
+
+LEAGUE_Away = subset(LEAGUE_Away, select = -c(id,book_id, league, Location) )
 ```
 
 

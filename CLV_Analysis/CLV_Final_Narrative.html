@@ -599,11 +599,10 @@ packages by specifying which week and year for NFL and NCAAF, and the
 date for the other 3 leagues. The list of book ids was taken from <a href="https://api.actionnetwork.com/web/v1/books" class="uri">https://api.actionnetwork.com/web/v1/books</a>, which
 contained all the information about the books available and their
 corresponding IDs. We were able to get historical betting data across
-multiple different books from as far back as 2017. The code we wrote to
-srcape the data can be found at <a href>data_scraper.R</a>.</p>
-<p>To reproduce our scraped data, run the following code. To get the
-data without having to scrape the code, you can load the dataset
-<code>CLV_Analysis/betting_data.rdata</code>.</p>
+multiple different books from as far back as 2017.</p>
+<p>The code we wrote to srcape the data can be found at <a href>data_scraper.R</a>. To reproduce our scraped data, run the
+following code. To get the data without having to scrape the code, you
+can load the dataset <code>CLV_Analysis/betting_data.rdata</code>.</p>
 <pre class="r"><code>source(&quot;data_scraper.R&quot;)
 
 save_df = function(league) {
@@ -630,11 +629,12 @@ each game and compiled that into line history data sets for each sport.
 It should be noted that html errors occurred in the years 2018 and 2020
 so lists of those game ids have to be cleaned separately and implemented
 on their own to pick up a chunk of the line histories from those
-seasons. The code used for this can be found in <a href>line_movement_data.R</a>.</p>
-<p>To scrape this data you can replace the capitalized portions of this
-code with the respective league you want to scrape or the data sets for
-each sport can be loaded from the directory
-<code>CLV_Analysis/LEAGUE_data/LEAGUE_movement_df</code></p>
+seasons.</p>
+<p>The code used for this can be found in <a href>line_movement_data.R</a>. To scrape this data you can replace
+the capitalized <code>LEAGUE</code> parts with the capitalized form of
+the respective league you want to scrape or the data sets for each sport
+can be loaded from the directory
+<code>CLV_Analysis/LEAGUE_data/LEAGUE_movement_df.rdata</code></p>
 <pre class="r"><code>LEAGUE &lt;- betting_data %&gt;%
   filter(league_name == &quot;LEAGUE&quot;) %&gt;%
   filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %&gt;%
@@ -671,6 +671,145 @@ for (id in LEAGUE$id) {
 
   print(paste(&quot;finished game&quot;,id))
   }</code></pre>
+</div>
+<div id="cleaning-the-data-for-application" class="section level3">
+<h3>Cleaning the Data For Application</h3>
+<p>At the next step, we removed any variables that would not be
+applicable to a user who only has access to the game lines, along with
+any indexing variables. These were mainly variables that described the
+public betting distribution on each of the lines including money line,
+spread, and over/under bets.</p>
+<p>In addition, we split each observation into two, one for the home
+team and one for the away team in order to replicate the fact that both
+would be options for someone to bet on.</p>
+<p>Finally, we implemented a binary variable <code>make_bet</code>. This
+took the closing money line value and compared it to the money line of
+each previous input, giving a <code>Yes</code> input to observations
+where money line was greater than the closing money line and a
+<code>No</code> input to those that were less than or equal to the
+closing line. This gave us the main output variable we will use for our
+classification predictive modeling for predicting a successful bet.</p>
+<p>The code used for this can be found in <a href>line_movement_compiled.R</a>. To clean the data yourself you can
+implement the following code, once again replacing the capitalized
+LEAGUE with the capitalized form of the league name of interest. You can
+also load the already cleaned data set in the directory
+<code>CLV_Analysis/LEAGUE_data/LEAGUE_movement_split_df.rdata</code></p>
+<pre class="r"><code>LEAGUE_movement_df &lt;- LEAGUE_movement_df %&gt;%
+  mutate(inserted = gsub(&quot;T&quot;,&quot; &quot;, inserted)) %&gt;%
+  mutate(inserted = gsub(&quot;Z&quot;,&quot;&quot;, inserted)) %&gt;%
+  mutate(inserted = strptime(inserted, format = &quot;%Y-%m-%d %H:%M:%S&quot;)) %&gt;%
+  select(-spread_away_line, -spread_home_line, -over, -under, -draw, -away_over, -away_under, -home_over, -home_under, -type)
+
+LEAGUE_movement_df &lt;- cbind(Index = 1:nrow(LEAGUE_movement_df), LEAGUE_movement_df)  
+
+LEAGUE_final_line &lt;- LEAGUE_movement_df %&gt;%
+  group_by(id, book_id) %&gt;%
+  slice(which.max(as.POSIXct(inserted)))
+
+LEAGUE_previous_lines &lt;- LEAGUE_movement_df %&gt;%
+  anti_join(NFL_final_line, by = &quot;Index&quot;)
+
+LEAGUE_final_line &lt;- LEAGUE_final_line %&gt;%
+  select(ml_away, ml_home, id, book_id)
+
+colnames(LEAGUE_final_line)[1] &lt;- &quot;away_Final_Line&quot;
+colnames(LEAGUE_final_line)[2] &lt;- &quot;home_Final_Line&quot;
+
+LEAGUE_previous_lines &lt;- LEAGUE_previous_lines %&gt;%
+  group_by(id, book_id) %&gt;%
+  left_join(LEAGUE_final_line, by =  c(&quot;id&quot;, &quot;book_id&quot; )) %&gt;%
+  ungroup() 
+
+LEAGUE_previous_lines %&gt;%
+  group_by(book_id) %&gt;%
+  summarise(t = n() )
+
+away_LEAGUE &lt;- LEAGUE_previous_lines %&gt;%
+  select(-ml_home, -spread_home, -home_total, -ml_home_public, -spread_home_public, -home_Final_Line)
+
+colnames(away_LEAGUE)[2] &lt;- &quot;money_line&quot;
+colnames(away_LEAGUE)[3] &lt;- &quot;spread&quot;
+colnames(away_LEAGUE)[5] &lt;- &quot;team_total&quot;
+colnames(away_LEAGUE)[6] &lt;- &quot;public_ml&quot;
+colnames(away_LEAGUE)[7] &lt;- &quot;public_spread&quot;
+colnames(away_LEAGUE)[8] &lt;- &quot;public_team_under&quot;
+colnames(away_LEAGUE)[9] &lt;- &quot;public_team_over&quot;
+colnames(away_LEAGUE)[14] &lt;- &quot;Final_line&quot;
+
+away_LEAGUE &lt;- away_LEAGUE %&gt;%
+  mutate(Location = &quot;away&quot;)
+
+home_LEAGUE &lt;- LEAGUE_previous_lines %&gt;%
+  select(-ml_away, -spread_away, -away_total, -ml_away_public, -spread_away_public, -away_Final_Line)
+
+colnames(home_NFL)[2] &lt;- &quot;money_line&quot;
+colnames(home_NFL)[3] &lt;- &quot;spread&quot;
+colnames(home_NFL)[5] &lt;- &quot;team_total&quot;
+colnames(home_NFL)[6] &lt;- &quot;public_ml&quot;
+colnames(home_NFL)[7] &lt;- &quot;public_spread&quot;
+colnames(home_NFL)[8] &lt;- &quot;public_team_under&quot;
+colnames(home_NFL)[9] &lt;- &quot;public_team_over&quot;
+colnames(home_NFL)[14] &lt;- &quot;Final_line&quot;
+
+home_LEAGUE &lt;- home_LEAGUE %&gt;%
+  mutate(Location = &quot;home&quot;)
+
+LEAGUE_lines_split &lt;- away_LEAGUE %&gt;%
+  rbind(home_LEAGUE) %&gt;%
+  mutate(&quot;make_bet&quot; = ifelse(money_line&gt;Final_line, &quot;Yes&quot;, &quot;No&quot;))</code></pre>
+</div>
+<div id="cleaning-the-data-for-leaks" class="section level3">
+<h3>Cleaning the Data for Leaks</h3>
+<p>At first, it seemed as if this was going to be a viable data set to
+be implemented for modeling, but on first attempt leaks in the data were
+obvious. Results were giving accuracy measures of up to 96% on the
+majority of our models, and while it would be great for profit if this
+were possible, it was apparent that issues in the data were causing this
+unreasonable success. We pinpointed the first issue to be that keeping
+each change of the line data in the data set made it too easy for the
+models to just track the movement of the line based on the previous
+input and make a much more accurate prediction of its direction,
+something that would not be applicable to a gambler who does not have
+access to the previous line values. To remedy this, we randomly sampled
+one of the previous line observations from each game so that the models
+could not trace through the full movement of that line.</p>
+<p>The next leak was being caused by trying to make a model that did not
+distinguish between home and away teams. Since the all of the lines are
+symmetric between home and away teams, and if say the home line was
+increasing in value then the away line would be decreasing, the models
+could pick up that if a certain line was saying yes to placing the bet,
+there was another line that was the opposite of that in the data set
+that would be a no bet. To fix this we had to split the data again into
+two data sets, one for home teams and one for away teams and run
+separate models on each.</p>
+<p>This cleaning was run at the front end of all of the final modeling
+files which can be found in the directory
+<code>CLV_Analysis/LEAGUE_CLV_Analysis.Rmd</code>. To run this cleaning
+yourself you can implement the following code with the same replacement
+techniques.</p>
+<pre class="r"><code># Home Data set
+LEAGUE_Sample &lt;- LEAGUE_lines_split %&gt;%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %&gt;%
+  na.omit() %&gt;%
+  group_by(id, book_id, Location) %&gt;%
+  sample_n(1)
+
+LEAGUE_Home &lt;- LEAGUE_Sample %&gt;%
+  filter(Location == &#39;home&#39;)
+
+LEAGUE_Home = subset(LEAGUE_Home, select = -c(id,book_id, league, Location) )
+
+# Away Data Set
+LEAGUE_Sample &lt;- LEAGUE_lines_split %&gt;%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %&gt;%
+  na.omit() %&gt;%
+  group_by(id, book_id, Location) %&gt;%
+  sample_n(1)
+
+LEAGUE_Away &lt;- LEAGUE_Sample %&gt;%
+  filter(Location == &#39;away&#39;)
+
+LEAGUE_Away = subset(LEAGUE_Away, select = -c(id,book_id, league, Location) )</code></pre>
 </div>
 </div>
 
