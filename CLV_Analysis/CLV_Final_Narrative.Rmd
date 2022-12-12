@@ -2,11 +2,14 @@
 title: "Closing Line Value Modeling Report"
 author: "Joe Margolis and Declan Elias"
 date: '2022-12-10'
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 library(dplyr)
 library(tidymodels)
 library(tidyverse)
@@ -17,6 +20,7 @@ library(sf)
 library(maps)
 library(plotly)
 library(remotes)
+library(kableExtra)
 ```
 
 ## Introduction
@@ -382,4 +386,978 @@ LEAGUE_Away <- LEAGUE_Sample %>%
 LEAGUE_Away = subset(LEAGUE_Away, select = -c(id,book_id, league, Location) )
 ```
 
+A major point to note of this process is that through cleaning the data for leaks, we unfortunately lost the vast majority of data we compiled. Since all data from before 2017 was missing the team over/under lines, we were stuck with only data from 2017-2022 with many missing games within those due to other missing variables. This resulted in the small sample sizes noted in the table below and therefore leads to skepticism in the models produced.
 
+```{r, echo = FALSE}
+`League` <- c("NFL", "NCAAF", "NBA", "MLB", "NHL")
+`Away Sample Size` <- c(943, 574, 1739, 6504, 2793)
+`Home Sample Size` <- c(941,582, 1761, 6511, 2749)
+
+Samples <- data.frame(`League`, `Away Sample Size`, `Home Sample Size`)
+
+Samples %>%
+  kbl(caption = "Home and Away Sample Sizes for Each League", col.names = c("League","Away Sample Size","Home Sample Size")) %>%
+  kable_classic_2()
+```
+
+
+## Failed Models
+
+Once the data was finally ready, we were able to start modeling. Unfortunately, the process was not always perfect. For both the home and away data sets for each league we ran three different classification techniques, logistic modeling, random forests, and decision trees. For ever single data set we got the same result with the logistic and random forest models failing and having the most success with our random forest models. To quickly give insight on why the logistic and random forest models were deemed failures, this section will run through the modeling process for the home NFL data. To see the results for the rest of the models the files can be found in the directory `CLV_Analysis/LEAGUE_CLV_Analysis.Rmd`.
+
+### Logistic Models
+
+The first model we produced was a logistic model, which applies a coefficient to each variable that represents how an increase in one unit of each variable affects the probability that that observation will be one that you should bet on.
+
+```{r include=FALSE}
+library(vip)
+library(probably) #install.packages('probably')
+tidymodels_prefer()
+conflicted::conflict_prefer("vi", "vip")
+library(rpart.plot)
+
+set.seed(121)
+
+load("NFL_Data/NFL_movement_split_df.rdata")
+```
+
+```{r include=FALSE}
+NFL_Sample <- NFL_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NFL_Home <- NFL_Sample %>%
+  filter(Location == 'home')
+
+NFL_Home = subset(NFL_Home, select = -c(id,book_id, league, Location) )
+
+```
+
+#### Logistic Model Coefficients
+
+When setting the model, creating the best model possible was the goal in this case, and with already only four variables being implemented it was important to use all of them to get the best results. After setting the model to our data we ended up with the following coefficients for our variables.
+
+```{r echo=FALSE}
+# Make sure you set reference level (the outcome you are NOT interested in)
+NFL_Home <- NFL_Home %>%
+  mutate(outcome = relevel(factor(make_bet), ref='No')) #set reference level
+
+NFL_cv10 <- vfold_cv(NFL_Home, v = 10)
+
+# Logistic Regression Model Spec
+logistic_spec <- logistic_reg() %>%
+    set_engine('glm') %>%
+    set_mode('classification')
+
+# Recipe
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = NFL_Home, family = binomial('logit'), maxit = 100) %>%
+    step_normalize(all_numeric_predictors()) %>% 
+    step_dummy(all_nominal_predictors())
+
+# Workflow (Recipe + Model)
+log_wf <- workflow() %>% 
+    add_recipe(logistic_rec) %>%
+    add_model(logistic_spec) 
+
+# Fit Model to Training Data
+log_fit <- fit(log_wf, data = NFL_Home)
+```
+
+```{r echo = FALSE}
+# Get Exponentiated coefficients + CI
+log_fit %>% tidy() %>%
+  mutate(OR.conf.low = exp(estimate - 1.96*std.error), OR.conf.high = exp(estimate + 1.96*std.error)) %>% # do this first
+  mutate(OR = exp(estimate)) %>%
+  kbl(caption = "Logistic Model Coefficients") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+This table does give some insight on the affect of these variables. We notice that as money line and total increase, it becomes more likely that you should place the bet as seen by the positive coefficients, while as spread and team totals increase the model is less likely to suggest betting.
+
+#### Logistic Model Results
+
+After setting the model, we then ran a ten cross validation folds test on the model to mimic how this model would likely work against outside data. This is where we noticed the failure in this model as seen in the test statistics below.
+
+```{r echo = FALSE}
+# CV Fit Model
+log_cv_fit <- fit_resamples(
+    log_wf, 
+    resamples = NFL_cv10,
+    metrics = metric_set(sens, yardstick::spec, accuracy, roc_auc),
+    control = control_resamples(save_pred = TRUE, event_level = 'second'))  # you need predictions for ROC calculations
+
+collect_metrics(log_cv_fit) %>% #default threshold is 0.5
+  kbl(caption = "Logistic Model Metric CV Fold Test Results") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+While the accuracy of this model actually shows promise at 64%, this is heavily weighted by the specificity of 97% which is the amount of times the model correctly predicts not to place a bet. In the case of sports betting, the most important statistic is sensitivity or the percentage of bets that should be placed that are correct. This is because sensitivity represents the cases where money is actually being risked by the better. In the case of specificity, the model incorrectly predicting not to bet is not that important since the better has not actually lost anything, but each incorrect bet placed costs money. Since this model shows a very poor sensitivity of about 0.04, this model was deemed a failure.
+
+### Random Forest
+
+The next models we ran were random forest models which randomly groups the data into thousands of data sets to mimic the idea of outside data and creates decision trees for each, averaging them to into one predictive model. This method gave similar results to the logistic model.
+
+```{r echo = FALSE}
+# Model Specification
+rf_spec <- rand_forest() %>%
+  set_engine(engine = 'ranger') %>% 
+  set_args(mtry = NULL, # size of random subset of variables; default is floor(sqrt(number of total predictors))
+           trees = 1000, # Number of trees
+           min_n = 2,
+           probability = FALSE, # FALSE: get hard predictions (not needed for regression)
+           importance = 'impurity') %>% # we'll come back to this at the end
+  set_mode('classification') # change this for regression
+
+# Recipe
+data_rec <- recipe(make_bet ~ spread + total + team_total + money_line, data = NFL_Home)
+
+# Workflows
+data_wf_mtry2 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 2)) %>%
+  add_recipe(data_rec)
+
+data_wf_mtry4 <- workflow() %>%
+  add_model(rf_spec %>% set_args(mtry = 4)) %>%
+  add_recipe(data_rec)
+```
+
+#### Random Forest Variable Importance
+
+```{r include=FALSE}
+set.seed(121) 
+data_fit_mtry4 <- fit(data_wf_mtry4, data = NFL_Home)
+
+rf_OOB_output <- function(fit_model, model_label, truth){
+    tibble(
+          .pred_class = fit_model %>% extract_fit_engine() %>% pluck('predictions'), #OOB predictions
+          make_bet = truth,
+          label = model_label
+      )
+}
+
+rf_OOB_output(data_fit_mtry4,4, NFL_Home %>% pull(make_bet))
+```
+
+Once again, we elected to go with the model that gave us the best chance at maximizing sensitivity and used all the variables at our disposal. This random forest model gave us the following variable importance measures
+
+```{r echo = FALSE}
+model_output <-data_fit_mtry4 %>% 
+    extract_fit_engine() 
+
+model_output %>% 
+    vip(num_features = 30) + theme_classic() #based on impurity
+```
+
+Unsurprisingly from this model, we notice that movements in money line tend to have the most impact on the probability of predicting that a bet should be placed on a certain line, followed by the game total, then team total, and lastly the spread having the least effect.
+
+#### Random Forest Results
+
+Unfortunately, when we ran the test statistics of the model we got similar results to the logistic model as seen in the confusion matrix for our random forest below.
+
+```{r echo = FALSE}
+mtry4Conf <- rf_OOB_output(data_fit_mtry4,4, NFL_Home %>% pull(make_bet)) %>%
+    conf_mat(truth = make_bet, estimate= .pred_class)
+mtry4Conf <- as.data.frame.matrix(mtry4Conf$table)
+
+mtry4Conf %>%
+    kbl(caption = "Random Forest Model Confusion Matrix") %>%
+    kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Once again, while this model does a good job at predicting when not to bet, with a specificity of about 73%, this model still fails where it counts with a sensitivity of only 32%. Just like the logistic model this in far to low to ever risk money on.
+
+## Final Models
+
+After producing the logistic and random forest models for each sport and deeming them as failures, we continued fitting one more model to each data set, this time using decision trees. Decision trees are able to split quantitative variables into many binary inequalities at the values it finds to be the most influential on the probability of a particular line being a successful bet. You can then trace through the tree using the line values to the bottom where it tells you whether or not to bet on the game along with giving a probability for how confident the tree is in that outcome. 
+
+### NFL
+
+#### Home Team Decision Tree
+
+```{r echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.0044,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NFL_Home)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NFL_Home)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+
+```
+
+The visualization above is the final model output for betting on a home team in the NFL. You can imagine this like a plinko board, where you take your line and at each split, which are called nodes, you can check the value of that variable in the line and based on whether the value is greater than or less than the one displayed in the tree, you can follow the path it leads. The "Yes" or "No" values in each node represents if you stopped tracing the line at that point what decision the model makes on making the bet or not. For example at the root node, which is the first and most impactful split in the tree, we would check if the over/under total for the game is greater than or less than 38. If it is less than 38, the decision has already made its decision, dropping all the way to the bottom and deciding on not making the bet, saying that only 4% of the time it will be a successful bet. On the other hand if the total is greater than 38 we would move on to the next node whih checks if money line is greater than or less than 321.
+
+```{r echo = FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Home NFL Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+We can also extract the following variable importance metrics from the decision tree, which calculates the overall impact of each variable on the predictive ability of the model, taking into account both how many times the variable appears in the tree and how high up on the tree the binary splits for that variable lie. From this we see money line and game totals having the most impact on the final prediction, followed by spread and then the individual team total being the least important measure.
+
+#### Home Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NFL_Home, type = "class")
+
+table_mat <- table(NFL_Home$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.7247609, 0.6742081, 0.7402778)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Home NFL Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+As we can see, this model significantly outperforms both the logistic and random forest models, by correctly picking the games to bet on more than 67% of the time when betting on a home team in the NFL, a level of success that would make a bettor very confident in using the model if the sample size of the data set were greater.
+
+#### Away Team Decision Tree
+
+```{r echo=FALSE}
+NFL_Sample <- NFL_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NFL_Away <- NFL_Sample %>%
+  filter(Location == 'away')
+
+NFL_Away = subset(NFL_Away, select = -c(id,book_id, league, Location) )
+
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.0022,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NFL_Away)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NFL_Away)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+The tree above represents the decision tree for betting on an away team in the NFL. The most important difference between this tree and the home team model is the simplicity of this model. There are significantly less nodes in this tree, which makes it much easier for a gambler to manually trace their line through to the final decision at the base.
+
+```{r echo = FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Away NFL Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+It is also interesting to note that the above variable importance is not the same for away teams as home teams. While money line remains the most important variable in this model, the game total which was the second most important variable in the home model has dropped to the least important variable in this one, moving spread up into the second most important variable and team total being third.
+
+#### Away Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NFL_Away, type = "class")
+
+table_mat <- table(NFL_Away$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.6924708, 0.6455026, 0.704244)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Away NFL Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+The increased simplicity of this model did however slightly decrease the success rate of this model, but still with a sensitivity of over 64% this model still performs very well and I would be confident in using this model for future bets if not for the small sample size.
+
+### NCAA Football
+
+#### Home Team Decision Tree
+
+```{r include=FALSE}
+load("NCAAF_Data/NCAAF_movement_split_df.rdata")
+
+NCAAF_Sample <- NCAAF_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NCAAF_Home <- NCAAF_Sample %>%
+  filter(Location == 'home')
+
+NCAAF_Home = subset(NCAAF_Home, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.01,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NCAAF_Home)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NCAAF_Home)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Above is the decision tree for betting on a home team in college football. This tree is much simpler than both of the NFL models and overall turned out to be the simplest model produced. This is mainly due to college footbal having by far the smallest sample size of any of the data sets we used though.
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Home NCAA Football Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+The variable importance measures here are very similar to that of the away NFL model, but one important note is the extreme lack of importance of game totals in this model making its betting decision.
+
+#### Home Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NCAAF_Home, type = "class")
+
+table_mat <- table(NCAAF_Home$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.7130584, 0.6235294, 0.75)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Home NCAA Football Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+Once again, with a sensitivity of more than 62% this model performs very well and if not for the small sample size this would be a good model to use in the future.
+
+#### Away Team Decision Tree
+
+```{r include=FALSE}
+load("NCAAF_Data/NCAAF_movement_split_df.rdata")
+
+NCAAF_Sample <- NCAAF_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NCAAF_Away <- NCAAF_Sample %>%
+  filter(Location == 'away')
+
+NCAAF_Away = subset(NCAAF_Away, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.01,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NCAAF_Away)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NCAAF_Away)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+The away model is slightly more complex than the home model, but still much simpler than either of the NFL models.
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Away NCAA Football Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+The variable importance measures show a very similar story to the home model, with the only notable difference being that the game totals have a significantly higher impact on the model's decision for away teams than home teams. If not for the small sample size this model seems ready to use for future games.
+
+#### Away Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NCAAF_Away, type = "class")
+
+table_mat <- table(NCAAF_Away$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.7160279, 0.7538462, 0.704955)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Away NCAA Football Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+The increased complexity of this model compared to the home model pays off big time, with the highest sensitivity of any models we produced at above 75%. If it were not for the small sample size this would be a great model for a bettor to use.
+
+### MLB
+
+#### Home Team Decision Tree
+
+```{r include=FALSE}
+load("MLB_Data/MLB_movement_split_df.rdata")
+
+MLB_Sample <- MLB_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+MLB_Home <- MLB_Sample %>%
+  filter(Location == 'home')
+
+MLB_Home = subset(MLB_Home, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.0015,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = MLB_Home)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = MLB_Home)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+With MLB being having by far the largest sample size, simplifying the model to a usable form took extensive pruning, with this being the simplest form possible without having the model decide not to bet for every game.
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Home MLB Football Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+The home MLB variable importance measures show great significance for all of the variables in the data set, with money line showing a massive impact in the final decision of the model. Even the least important measure of the individual team total shows a large impact.
+
+#### Home Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = MLB_Home, type = "class")
+
+table_mat <- table(MLB_Home$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.6090922, 0.5462687, 0.6337698)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Home MLB Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+Unsurprisingly, the home MLB model does not perform nearly as well as the NFL or college football models. This is likely due to the fact that teams play games almost every day in their season, meaning that game lines are only open for a couple days before the game starts, as opposed to a whole week like football. This results in much less movement in lines of MLB games, making it much more difficult for a model to find consistent patterns. While the sensitivity of nearly 55% is good enough to not put this model into the failure group, I would still be cautious about actually using this for future bets.
+
+#### Away Team Decision Tree
+
+```{r include=FALSE}
+load("MLB_Data/MLB_movement_split_df.rdata")
+
+MLB_Sample <- MLB_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+MLB_Away <- MLB_Sample %>%
+  filter(Location == 'away')
+
+MLB_Away = subset(MLB_Away, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.0008,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = MLB_Away)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = MLB_Away)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Once again, to get this model into a form simple enough to use, extensive pruning was applied and the tree above ended up being the simplest model possible without it always deciding not to bet.
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Away MLB Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+For betting on away teams in the MLB, the main difference in variable importance from home teams is proportionally how much more of an effect money line has on the final decision of the model than the rest of the variable.
+
+#### Away Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = MLB_Away, type = "class")
+
+table_mat <- table(MLB_Away$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.6938088, 0.6529605, 0.6976209)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Away MLB Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+Interestingly, the away team model greatly outperforms the home team model with a sensitivity of almost 65%. This also compares well to the sensitivities for the football models, even with the MLB having less time for line movement. Coupled with the MLB having the greatest sample size I would be most confident in placing real money bets through this model of any we produced.
+
+### NHL
+
+#### Home Team Decision Tree
+
+```{r include=FALSE}
+load("NHL_Data/NHL_movement_split_df.rdata")
+
+NHL_Sample <- NHL_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NHL_Home <- NHL_Sample %>%
+  filter(Location == 'home')
+
+NHL_Home = subset(NHL_Home, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.0015,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NHL_Home)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NHL_Home)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Similarly to the MLB, the home NHL model posed difficulty in achieving a simple model and we were forced to prune to the simplest model possible that still decides to bet on a good portion of games
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Home NHL Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+From the variable importance of the home NHL decision tree we can see that spread and game total have almost no affect of the model's decision. This is unsurprising since the NHL is a low scoring league where nearly all of the spreads and game totals are the same value with spreads usually being plus or minus 1.5 and game totals falling around 6.
+
+#### Home Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NHL_Home, type = "class")
+
+table_mat <- table(NHL_Home$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.6950529, 0.6382979, 0.6985371)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Home NHL Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+The home NHL model performs very well with a sensitivity of about 64%. Since the sample size for this data set is still relatively small, I would still have doubts about putting real money on this model in its current form.
+
+#### Away Team Decision Tree
+
+```{r include=FALSE}
+load("NHL_Data/NHL_movement_split_df.rdata")
+
+NHL_Sample <- NHL_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NHL_Away <- NHL_Sample %>%
+  filter(Location == 'away')
+
+NHL_Away = subset(NHL_Away, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.00075,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NHL_Away)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NHL_Away)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Interestingly, for the away NHL model, simplifying the model to an applicable form was much easier than for the home model. This allowed us to use a model that was more complex than the simplest model possible.
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Away NHL Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+The variable importance for the away NHL model shows nearly the exact same story as the home model.
+
+#### Away Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NHL_Away, type = "class")
+
+table_mat <- table(NHL_Away$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.7230993, 0.6753247, 0.7240099)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Away NHL Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+In addition to being an easier model to simplify if desired, the away NHL model also performs slightly better than the home model at about 68% sensitivity. Still, the relatively small sample size casts doubt on placing real bets through this model.
+
+### NBA
+
+#### Home Team Decision Tree
+
+```{r include=FALSE}
+load("NBA_Data/NBA_movement_split_df.rdata")
+
+NBA_Sample <- NBA_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NBA_Home <- NBA_Sample %>%
+  filter(Location == 'home')
+
+NBA_Home = subset(NBA_Home, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.004,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NBA_Home)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NBA_Home)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Similarly to the away NHL model, the home NBA model allowed for more options when pruning and we were not stuk using the simplest model possible.
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Home NBA Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+The variable importance for the home NBA shows the most even distribution of any of the models so far, with all parts of the line having an impact on the model's decision.
+
+#### Home Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NBA_Home, type = "class")
+
+table_mat <- table(NBA_Home$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.632792, 0.6027088, 0.6418827)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Home NBA Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+While not quite as good as many of the other models with a sensitivity of about 60%, this model is still performing well. With a similar sample size to the NHL data sets though, there are still doubts about applying this model to future bets.
+
+#### Away Team Decision Tree
+
+```{r include=FALSE}
+load("NBA_Data/NBA_movement_split_df.rdata")
+
+NBA_Sample <- NBA_lines_split %>%
+  select(-Index, -Final_line, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
+  na.omit() %>%
+  group_by(id, book_id, Location) %>%
+  sample_n(1)
+
+NBA_Away <- NBA_Sample %>%
+  filter(Location == 'away')
+
+NBA_Away = subset(NBA_Away, select = -c(id,book_id, league, Location) )
+```
+
+```{r, echo=FALSE}
+ct_spec <- decision_tree() %>%
+  set_engine(engine = 'rpart') %>%
+  set_args(cost_complexity = 0.0043,  #default is 0.01 (used for pruning a tree)
+           min_n = NULL, #min number of observations to try split: default is 20 [I think the documentation has a typo and says 2]  (used to stop early)
+           tree_depth = NULL) %>% #max depth, number of branches/splits to get to any final group: default is 30 (used to stop early)
+  set_mode('classification') # change this for regression tree
+
+
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total , data = NBA_Away)
+
+data_wf <- workflow() %>%
+  add_model(ct_spec) %>%
+  add_recipe(data_rec)
+
+fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
+  fit(data = NBA_Away)
+
+# Plot the tree (make sure to load the rpart.plot package first)
+fit_mod %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Simplifying the away NBA model was much more difficult than the home one as there were very few viable options, with this model being the simplest model possible that still decides to make bets on games
+
+```{r echo=FALSE}
+fit_mod %>%
+  extract_fit_engine() %>%
+  pluck('variable.importance') %>%
+  kbl(caption = "Away NBA Variable Importance", col.names = c("Variable Importance")) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+In the away NBA model, we do not notice the same type of distribution as seen in the home model. Instead in this model money line and spread have a significantly greater impact on the model's final decision than the game and team totals.
+
+#### Away Team Decision Tree Statistics
+
+```{r, echo=FALSE}
+# Hard (class) prediction
+prediction <- predict(fit_mod, new_data = NBA_Away, type = "class")
+
+table_mat <- table(NBA_Away$make_bet, prediction$.pred_class)
+
+accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+sens_Test <- table_mat[2,2] / (table_mat[1,2] + table_mat[2,2])
+spec_Test <- table_mat[1,1] / (table_mat[1,1] + table_mat[2,1])
+
+`Measurement` <- c("Accuracy", "Sensitivity", "Specificity")
+`Value` <- c(0.6584599, 0.620438, 0.6688919)
+
+
+Stats <- data.frame(`Measurement`, `Value`)
+
+Stats %>%
+  kbl(caption = "Away NBA Decision Tree Accuracy Statistics", col.names = c("Accuracy Measure","Value")) %>%
+  kable_classic_2()
+```
+
+The away NBA model shows very similar success rates to the home model, performing well with a sensitivity of about 62%. Still, the same doubts apply with a relatively small sample size.
+
+## Conclusion
+
+Overall, the first thing to keep in mind for all of these models is the relatively small sample size of all of these data sets. This should automatically cast doubt on just about all of the models except for perhaps the MLB data sets. That being said if I were to rank the models in order from most to least ready to be applied to future bets the order would be as follows.
+
+1. Away MLB
+2. Away NHL
+3. Home NHL
+4. Away NBA
+5. Home NBA
+6. Home NFL
+7. Away NCAA Football
+8. Away NFL
+9. Away NCAA Football
+10. Home MLB
+
+These rankings are based on both the sensitivity of the models and the sample sizes of the data sets. If we decided to ignore the sample sizes though, sensitivities of over 60% are very impressive and would certainly be good enough to apply to real life bets, making all of the decision trees applicable besides the home MLB model. Since we cannot ignore the sample size limitations though I would only feel confident using the away MLB model.
+
+The next steps in this project would first be to continue scraping data and expanding our data sets as games continue to be played. After refining the models to larger data sets, if similar success rates remain we would then be able to apply these models to real games with real bets to see if they hold up. Another step that could be taken would be to engineer some sort of function that would allow a better to input the league, whether the team is home or away, and the lines for that team and have the function run through the decision tree for that line and feed the better its decision. This would be an important addition because it would allow us to use the most complex decision trees possible and have more accurate models because of it since a better would not have to manually trace through the decision tree. Finally, we could also do the same type of modeling for the other betting options, particularly spread which is as commonly bet on as money lines.
