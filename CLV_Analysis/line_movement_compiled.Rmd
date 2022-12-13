@@ -28,12 +28,9 @@ load("NHL_Data/NHL_movement_df.rdata")
 load("NBA_Data/NBA_movement_df.rdata")
 load("NFL_Data/NFL_2018_movement_df.rdata")
 load("NFL_Data/NFL_2020_movement_df.rdata")
-load("NFL_Data/NFL_movement_2016_df.rdata")
-load("NFL_Data/NFL_movement_2015_df.rdata")
-load("NFL_Data/NFL_movement_2014_df.rdata")
-load("NFL_Data/NFL_movement_2013_df.rdata")
-load("NFL_Data/NFL_movement_2012_df.rdata")
 ```
+
+# Compiling NFL Data
 
 ```{r}
 NFL_movement_df <- NFL_movement_df %>%
@@ -41,22 +38,6 @@ NFL_movement_df <- NFL_movement_df %>%
 
 NFL_movement_df <- NFL_movement_df %>%
   rbind(NFL_movement_2020_df) 
-
-NFL_movement_df <- NFL_movement_df %>%
-  rbind(NFL_movement_2016_df) 
-
-NFL_movement_df <- NFL_movement_df %>%
-  rbind(NFL_movement_2015_df) 
-
-NFL_movement_df <- NFL_movement_df %>%
-  rbind(NFL_movement_2014_df) 
-
-NFL_movement_df <- NFL_movement_df %>%
-  rbind(NFL_movement_2013_df) 
-
-NFL_movement_df <- NFL_movement_df %>%
-  rbind(NFL_movement_2012_df) 
-
 ```
 
 ```{r}
@@ -132,7 +113,7 @@ NFL_lines_split <- away_NFL %>%
   mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
 ```
 
-
+## Compiling NCAAF Data
 
 ```{r}
 NCAAF_movement_df <- NCAAF_movement_df %>%
@@ -207,6 +188,7 @@ NCAAF_lines_split <- away_NCAAF %>%
   mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
 ```
 
+## Compiling MLB Data
 
 ```{r}
 MLB_movement_df <- MLB_movement_df %>%
@@ -278,6 +260,7 @@ MLB_lines_split <- away_MLB %>%
   mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
 ```
 
+## Compiling NBA Data
 
 ```{r}
 NBA_movement_df <- NBA_movement_df %>%
@@ -349,6 +332,7 @@ NBA_lines_split <- away_NBA %>%
   mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
 ```
 
+## Compiling NHL Data
 
 ```{r}
 NHL_movement_df <- NHL_movement_df %>%
@@ -420,6 +404,7 @@ NHL_lines_split <- away_NHL %>%
   mutate("make_bet" = ifelse(money_line>Final_line, "Yes", "No"))
 ```
 
+## Putting Them All Together
 
 ```{r}
 compiled_lines <- NFL_previous_lines%>%
@@ -486,14 +471,10 @@ save(compiled_lines_split, file = "compiled_movement_split_df.rdata")
 ```
 
 ```{r}
-#save(NFL_lines_split, file = "NFL_Data/NFL_movement_split_df.rdata")
+save(NFL_lines_split, file = "NFL_Data/NFL_movement_split_df.rdata")
 save(NCAAF_lines_split, file = "NCAAF_Data/NCAAF_movement_split_df.rdata")
 save(MLB_lines_split, file = "MLB_Data/MLB_movement_split_df.rdata")
-```
-```{r}
 save(NBA_lines_split, file = "NBA_Data/NBA_movement_split_df.rdata")
-```
-```{r}
 save(NHL_lines_split, file = "NHL_Data/NHL_movement_split_df.rdata")
 ```
 
