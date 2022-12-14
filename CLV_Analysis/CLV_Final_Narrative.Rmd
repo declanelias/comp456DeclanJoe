@@ -713,6 +713,9 @@ The increased simplicity of this model did however slightly decrease the success
 
 ### NCAA Football
 
+<details>
+  <summary>Click for NCAA Football Analysis</summary>
+
 #### Home Team Decision Tree
 
 ```{r include=FALSE}
@@ -868,6 +871,8 @@ Stats %>%
 ```
 
 The increased complexity of this model compared to the home model pays off big time, with the highest sensitivity of any models we produced at above 75%. If it were not for the small sample size this would be a great model for a bettor to use.
+
+</details>
 
 ### MLB
 
@@ -1342,6 +1347,8 @@ Stats %>%
 ```
 
 The away NBA model shows very similar success rates to the home model, performing well with a sensitivity of about 62%. Still, the same doubts apply with a relatively small sample size.
+
+
 
 ## Conclusion
 
