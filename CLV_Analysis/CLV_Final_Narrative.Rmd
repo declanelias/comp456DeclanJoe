@@ -876,6 +876,9 @@ The increased complexity of this model compared to the home model pays off big t
 
 ### MLB
 
+<details>
+  <summary>Click for MLB Analysis</summary>
+
 #### Home Team Decision Tree
 
 ```{r include=FALSE}
@@ -1032,8 +1035,13 @@ Stats %>%
 
 Interestingly, the away team model greatly outperforms the home team model with a sensitivity of almost 65%. This also compares well to the sensitivities for the football models, even with the MLB having less time for line movement. Coupled with the MLB having the greatest sample size I would be most confident in placing real money bets through this model of any we produced.
 
+</details>
+
 ### NHL
 
+<details>
+  <summary>Click for NHL Analysis</summary>
+  
 #### Home Team Decision Tree
 
 ```{r include=FALSE}
@@ -1190,7 +1198,12 @@ Stats %>%
 
 In addition to being an easier model to simplify if desired, the away NHL model also performs slightly better than the home model at about 68% sensitivity. Still, the relatively small sample size casts doubt on placing real bets through this model.
 
+</details>
+
 ### NBA
+
+<details>
+  <summary>Click for NBA Analysis</summary>
 
 #### Home Team Decision Tree
 
@@ -1348,7 +1361,7 @@ Stats %>%
 
 The away NBA model shows very similar success rates to the home model, performing well with a sensitivity of about 62%. Still, the same doubts apply with a relatively small sample size.
 
-
+</details>
 
 ## Conclusion
 
