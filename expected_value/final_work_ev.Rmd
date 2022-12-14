@@ -1,8 +1,10 @@
 ---
 title: "Expected Value Final Work"
-output: html_document
+author: "Declan Elias and Joe Margolis"
 date: '2022-12-04'
-author: Declan Elias and Joe Margolis
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -185,12 +187,12 @@ Fair Probability : $\text{Fair Probability}_1 =\frac{\text{implied probability}_
 
 Using the DraftKings moneyline odds, we calculate the two implied probabilities ($p_n$ for navy, $p_a$ for army):
 
-$p_n = \frac{100}{100 + 100}=.5$
+$p_n = \frac{100}{100 + 100}=.5\\$
 $p_a = \frac{120}{120 + 100}=.545$
 
 The fair odds, given by $f_n$ and $f_a$, can then be calculated:
 
-$f_n = \frac{p_n}{p_n+p_a} = \frac{.5}{1.045} = 0.478$
+$f_n = \frac{p_n}{p_n+p_a} = \frac{.5}{1.045} = 0.478\\$
 $f_a = \frac{p_a}{p_n+p_a} = \frac{.545}{1.045} = .522$
 
 Using our method of removing the vig, we believe DraftKings set the win probability of Navy to be .478, and the win probability of Navy to be .522.
