@@ -34,13 +34,13 @@ MLB_Sample <- MLB_lines_split %>%
   group_by(id, book_id, Location) %>%
   sample_n(1)
 
-MLB_Full <- MLB_Sample %>%
+MLB_Home <- MLB_Sample %>%
   select(-Index, -id, -Final_line, -book_id, -inserted, -public_ml, -public_spread, -public_team_under, -public_team_over) %>%
   filter(Location == 'home')
 
-MLB_Full = subset(MLB_Full, select = -c(id,book_id, league, Location) )
+MLB_Home = subset(MLB_Home, select = -c(id,book_id, league, Location) )
 
-MLB_Full <- MLB_Full %>%
+MLB_Home <- MLB_Home %>%
   na.omit()
 ```
 
@@ -49,10 +49,10 @@ MLB_Full <- MLB_Full %>%
 
 ```{r}
 # Make sure you set reference level (the outcome you are NOT interested in)
-MLB_Full <- MLB_Full %>%
+MLB_Home <- MLB_Home %>%
   mutate(outcome = relevel(factor(make_bet), ref='No')) #set reference level
 
-MLB_cv10 <- vfold_cv(MLB_Full, v = 10)
+MLB_cv10 <- vfold_cv(MLB_Home, v = 10)
 
 # Logistic Regression Model Spec
 logistic_spec <- logistic_reg() %>%
@@ -60,7 +60,7 @@ logistic_spec <- logistic_reg() %>%
     set_mode('classification')
 
 # Recipe
-logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Full, family = binomial('logit'), maxit = 100) %>%
+logistic_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Home, family = binomial('logit'), maxit = 100) %>%
     step_normalize(all_numeric_predictors()) %>% 
     step_dummy(all_nominal_predictors())
 
@@ -70,7 +70,7 @@ log_wf <- workflow() %>%
     add_model(logistic_spec) 
 
 # Fit Model to Training Data
-log_fit <- fit(log_wf, data = MLB_Full)
+log_fit <- fit(log_wf, data = MLB_Home)
 ```
 
 ### Checking Model
@@ -88,18 +88,18 @@ log_fit %>% tidy() %>%
 ### Predicting on all Data
 ```{r}
 # Make soft (probability) predictions
-predict(log_fit, new_data = MLB_Full, type = "prob")
+predict(log_fit, new_data = MLB_Home, type = "prob")
 
 # Make hard (class) predictions (using a default 0.5 probability threshold)
-predict(log_fit, new_data = MLB_Full, type = "class")
+predict(log_fit, new_data = MLB_Home, type = "class")
 ```
 
 ### Predicting on Training Data
 
 ```{r}
 # Soft predictions
-logistic_output <-  MLB_Full %>%
-  bind_cols(predict(log_fit, new_data = MLB_Full, type = 'prob')) 
+logistic_output <-  MLB_Home %>%
+  bind_cols(predict(log_fit, new_data = MLB_Home, type = 'prob')) 
 
 # Hard predictions (you pick threshold)
 logistic_output <- logistic_output %>%
@@ -169,7 +169,7 @@ rf_spec <- rand_forest() %>%
   set_mode('classification') # change this for regression
 
 # Recipe
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Home)
 
 # Workflows
 data_wf_mtry2 <- workflow() %>%
@@ -191,11 +191,11 @@ data_wf_mtry6 <- workflow() %>%
 ### Fitting Models
 
 ```{r}
-MLB_Full <- MLB_Full %>%
+MLB_Home <- MLB_Home %>%
   na.omit()
 
 set.seed(121) # make sure to run this before each fit so that you have the same 1000 trees
-data_fit_mtry2 <- fit(data_wf_mtry2, data = MLB_Full)
+data_fit_mtry2 <- fit(data_wf_mtry2, data = MLB_Home)
 
 ```
 
@@ -203,10 +203,10 @@ data_fit_mtry2 <- fit(data_wf_mtry2, data = MLB_Full)
 
 # Fit models for 12, 74, 147
 set.seed(121) 
-data_fit_mtry4 <- fit(data_wf_mtry4, data = MLB_Full)
+data_fit_mtry4 <- fit(data_wf_mtry4, data = MLB_Home)
 
 "set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Full)"
+data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Home)"
 ```
 
 ```{r}
@@ -220,9 +220,9 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-#rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry4,4, MLB_Full %>% pull(make_bet))
-rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
+#rf_OOB_output(data_fit_mtry6,6, MLB_Home %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry4,4, MLB_Home %>% pull(make_bet))
+rf_OOB_output(data_fit_mtry2,2, MLB_Home %>% pull(make_bet))
 ```
 
 ### Evaluating Models
@@ -231,9 +231,9 @@ rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    #rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry4,4, MLB_Full %>% pull(make_bet)),
-    rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet))
+    #rf_OOB_output(data_fit_mtry6,6, MLB_Home %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry4,4, MLB_Home %>% pull(make_bet)),
+    rf_OOB_output(data_fit_mtry2,2, MLB_Home %>% pull(make_bet))
   
 )
 
@@ -259,7 +259,7 @@ data_rf_OOB_output %>%
 data_fit_mtry4
 ```
 ```{r}
-rf_OOB_output(data_fit_mtry2,2, MLB_Full %>% pull(make_bet)) %>%
+rf_OOB_output(data_fit_mtry2,2, MLB_Home %>% pull(make_bet)) %>%
     conf_mat(truth = make_bet, estimate= .pred_class)
 ```
 
@@ -278,7 +278,7 @@ model_output %>% vip::vi() %>% head()
 ```{r}
 model_output2 <- data_wf_mtry4 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
-  fit(data = MLB_Full) %>% 
+  fit(data = MLB_Home) %>% 
     extract_fit_engine() 
 
 model_output2 %>% 
@@ -302,14 +302,14 @@ ct_spec <- decision_tree() %>%
   set_mode('classification') # change this for regression tree
 
 
-data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Full)
+data_rec <- recipe(make_bet ~ money_line + spread + total + team_total, data = MLB_Home)
 
 data_wf <- workflow() %>%
   add_model(ct_spec) %>%
   add_recipe(data_rec)
 
 fit_mod <- data_wf %>% # or use tune_grid() to tune any of the parameters above
-  fit(data = MLB_Full)
+  fit(data = MLB_Home)
 ```
 
 ### Visualizing Tree
@@ -329,11 +329,11 @@ fit_mod %>%
 
 ```{r}
 # Hard (class) prediction
-prediction <- predict(fit_mod, new_data = MLB_Full, type = "class")
+prediction <- predict(fit_mod, new_data = MLB_Home, type = "class")
 ```
 
 ```{r}
-table_mat <- table(MLB_Full$make_bet, prediction$.pred_class)
+table_mat <- table(MLB_Home$make_bet, prediction$.pred_class)
 table_mat
 ```
 ```{r}
@@ -527,7 +527,7 @@ set.seed(121)
 data_fit_mtry4 <- fit(data_wf_mtry4, data = MLB_Away)
 
 "set.seed(121)
-data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Full)"
+data_fit_mtry6 <- fit(data_wf_mtry6, data = MLB_Home)"
 ```
 
 ```{r}
@@ -541,7 +541,7 @@ rf_OOB_output <- function(fit_model, model_label, truth){
 }
 
 #check out the function output
-#rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet))
+#rf_OOB_output(data_fit_mtry6,6, MLB_Home %>% pull(make_bet))
 rf_OOB_output(data_fit_mtry4,4, MLB_Away %>% pull(make_bet))
 rf_OOB_output(data_fit_mtry2,2, MLB_Away %>% pull(make_bet))
 ```
@@ -552,7 +552,7 @@ rf_OOB_output(data_fit_mtry2,2, MLB_Away %>% pull(make_bet))
 # Evaluate OOB Metrics
 
 data_rf_OOB_output <- bind_rows(
-    #rf_OOB_output(data_fit_mtry6,6, MLB_Full %>% pull(make_bet)),
+    #rf_OOB_output(data_fit_mtry6,6, MLB_Home %>% pull(make_bet)),
     rf_OOB_output(data_fit_mtry4,4, MLB_Away %>% pull(make_bet)),
     rf_OOB_output(data_fit_mtry2,2, MLB_Away %>% pull(make_bet))
   
@@ -599,7 +599,7 @@ model_output %>% vip::vi() %>% head()
 ```{r}
 model_output2 <- data_wf_mtry4 %>% 
   update_model(rf_spec %>% set_args(importance = "permutation")) %>% #based on permutation
-  fit(data = MLB_Full) %>% 
+  fit(data = MLB_Home) %>% 
     extract_fit_engine() 
 
 model_output2 %>% 
