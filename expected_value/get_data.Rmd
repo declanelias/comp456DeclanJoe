@@ -20,9 +20,7 @@ save_df = function(league) {
   save(betting_df, file = paste("betting_data/", league, "_raw.rdata",sep = ""))
 }
 
-
-leagues = c("ncaaf", "nfl")
-
+leagues = c("ncaaf", "nfl", "mlb", "nba", "ncaab", "nhl")
 
 map(
   leagues,

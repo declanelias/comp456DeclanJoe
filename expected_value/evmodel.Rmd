@@ -46,7 +46,16 @@ source("clean_data.R")
 source("book_average.R")
 
 ncaaf_raw = clean_data("ncaaf")
-ncaaf_ml = average_books(ncaaf_raw)
+ncaaf_ml = average_books(ncaaf_raw, "ncaaf")
+
+nba_raw = clean_data("nba")
+nba_ml = average_books(ncaaf_raw, "nba")
+
+nba_clean = nba_ml %>% final_clean(2017, 2021, 500)
+
+nba_clean %>%
+  group_by(season, id) %>%
+  summarise(n())
 
 save(ncaaf_ml, file = "betting_data/ncaaf_ml_clean.rdata")
 
@@ -72,6 +81,8 @@ save(nfl_ml, file = "betting_data/nfl_ml_clean.rdata")
 
 mlb_ml = mlb_ml %>% select(-c(is_legal))
 save(mlb_ml, file = "betting_data/mlb_ml_clean.rdata")
+
+save(ncaaf_ml, file = "betting_data/ncaaf_ml_clean.rdata")
 
 ```
 

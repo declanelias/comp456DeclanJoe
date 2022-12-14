@@ -21,7 +21,7 @@ library(plotly)
 
 ## Introduction
 
-In this project, we will analyze if it is possible to make money sports gambling with positive expected value bets by exploiting the differences in odds offered by different sports betting companies, or sportsbooks, on the same game. We were motivated to explore this idea of "odds shopping" after meeting with Alex Monahan, co-founder of [OddsJam.com](oddsjam.com). Founded in 2021, OddsJam provides real-time odds comparisons of more than 100 books to their subscribers. They sell the idea that it is possible to make money gambling on sports. The idea boils down to viewing the discrepancy in odds offered by different sports books as an inefficient financial market which can easily be exploited. Countless user testimonials, including Alex Monahan, himself, claiming to have made $400,000 off his methods, appear all over the website, showing us that the company is at least good at marketing. However, the claim that it is possible to make money in the long run with gambling sounds too good to be true. We look to explore this claim in the following project.
+In this project, we will analyze if it is possible to make money sports gambling by exploiting the differences in odds offered by different sports betting companies, or **sportsbooks**, on the same game. We were motivated to explore this idea of "odds shopping" after meeting with Alex Monahan, co-founder of [OddsJam.com](oddsjam.com). Founded in 2021, OddsJam provides real-time odds comparisons of more than 100 books to their subscribers. They sell the idea that it is possible to make money gambling on sports. The idea boils down to viewing the discrepancy in odds offered by different sports books as an inefficient financial market which can easily be exploited. Countless user testimonials, including Alex Monahan, himself, claiming to have made $400,000 off his methods, appear all over the website, showing us that the company is at least good at marketing. However, the claim that it is possible to make money in the long run with gambling sounds too good to be true. We look to explore this claim in the following project.
 
 ## What is Sports Betting?
 
@@ -59,11 +59,15 @@ save(us_map_betting, file = "graphics/us_map_betting")
 
 ```{r include=FALSE}
 load("graphics/us_map_betting")
+```
+
+```{r echo=FALSE}
 plot(us_map_betting)
 ```
 
 
-With this rise in popularity has come a rise in data and analysis. Everywhere you look in the online gambling world there are people trying to sell their picks, claiming that they have an algorithm that can beat the lines set by Vegas. But the books know what they're doing. 
+
+With this rise in popularity has come a rise in data and analysis. Everywhere you look in the online gambling world there are people trying to sell their picks, claiming that they have an algorithm that can beat the **lines** (betting odds) set by Vegas. But the books know what they're doing. 
 
 ```{r eval=FALSE, message=FALSE, include=FALSE}
 nba_raw = load_league("nba", TRUE)
@@ -130,10 +134,14 @@ save(all_sports_reliability_plot, file = "graphics/all_sports_reliability_plot")
 rm(nba_raw, ncaab_raw, nhl_raw, nfl_raw, mlb_raw, ncaaf_raw, all_sports_raw)
 ```
 
-```{r include=FALSE}
+```{r echo=FALSE}
 load("graphics/all_sports_reliability_plot")
+```
+
+```{r echo=FALSE}
 plot(all_sports_reliability_plot)
 ```
+
 
 The graphic above displays a reliability plot for the last 5 full seasons of the MLB, NBA, NCAA Basketball, NCAA Football, NFL, and NHL. The plots display the cumulative frequency of true wins on the y axis, and the average predicted win probabilities on the x axis. Reliability plots indicate how well calibrated predictions made by a model are. The reliability plot of a perfectly calibrated model, meaning a prediction with probability $p$ is correct $p * 100$ percent of the time, will be linear with slope equal to 1. Each plot is almost a straight line, with slight variations, which indicates how incredible sportsbooks are at predict the outcomes.
 
@@ -143,7 +151,9 @@ However, there are other ways that people claim can be profitable in the long ru
 
 ## How Sports Betting Works
 
-Sports books offer many different ways to bet on sports, but typically the most common types of bets are straight bets, money line bets, and over/under bets. Straight bets refer to betting on a team to win or lose by a certain amount of points, known as the spread. A money line bet means the gambler picks a team to win straight up. An over / under bet is when a bettor gambles on the combined score being above or below a certain number. For each of these bets, the book sets a probability in the form of a line. In the United States the probabilities are displayed through American odds, which come in the form of a number (known as a line) greater than or equal to 100, or less than or equal to -100. Positive values indicate that if a bettor bets $100, they will win the amount of the line plus their original bet. Negative values mean that a bettor has to bet the size of the line to win \$100 plus their original bet. 
+### Types of Bets
+
+Sports books offer many different ways to bet on sports, but typically the most common types of bets are **straight**, **money line** bets, and **over/under** bets. Straight bets refer to betting on a team to win or lose by a certain amount of points, known as the spread. A money line bet means the gambler picks a team to win straight up. An over / under bet is when a bettor gambles on the combined score being above or below a certain number. For each of these bets, the book sets a probability in the form of a **line**. In the United States the probabilities are displayed through **American odds**, which come in the form of a number greater than or equal to 100, or less than or equal to -100. Positive values indicate that if a bettor bets $100, they will win the amount of the line plus their original bet. Negative values mean that a bettor has to bet the size of the line to win \$100 plus their original bet. 
 
 <center>
 
@@ -155,13 +165,35 @@ Take this image, for example. It is a screen shot of an offering from one of the
 
 After understanding how American odds work, the other two columns are pretty straightforward. When betting on the spread, a positive value means that a bet on that team will push (get just the bet back) if the team loses by the spread and win if the team loses by less than the spread. Conversely, a negative value means that a team has to win by more than the spread to win the bet. DraftKings thinks that Army is a 1 point favorite and is offering a line of -110. This means a bet of $110 would win \$100 if Army wins by more than 1. If they win by 1, the original bet will be returned. Similarly, a bet on the Total over (indicated by O 33.5 in the picture) means the bettor will win if the sum of the points scored by both teams is 34 or more (the .5 means that the bet cannot push), and a bet on the under means the bettor will win if the sum of the points is 33 or less.
 
-In football, the spread and the over / under bets are usually regarded as a 50 / 50 bet, however books usually price coinflips at -110 on each side. A line of -110 has an implied probability of 52.38% ($\frac{110}{110 + 100} * 100$), even though the true probability, also known as the "fair" probability should be .5 on each side ($\frac{.5238}{.5238 + .5238} * 100$) This means the sum of the two probabilities of the possible outcomes is 104.76%. The extra 4.76% is known as the "juice" or the "vig", and it is how the books make their profit. If Bettor A places a $110 bet on Navy at +1 and Bettor B places \$110 on Army -1, and Army wins by more than 1, DraftKings will pay \$100 to Bettor B, but collect \$110 from Bettor A, leaving the book with a \$10, or 4.76%, profit. This motivates DraftKings to try to keep equal dollar amounts of bets on each side, meaning that the company will change the spread or the line if their is an imbalance. 
+### How Books Make Money
 
-### Implied and Fair Probability Formulas
+Books make their profit by increasing the probabilities of each bet, which is reflected in the lines, so that the sum of possible outcomes is greater than 1. Each line has an **implied probability** which is calculated using the simple formula 
 
-Implied Probability : $\frac{-1 * \text{Negative American Odds}}{\text{-1 * Negatvie American Odds + 100}}$ or $\frac{100}{\text{ Positive American Odds + 100}}$
+Implied Probability : $\frac{-1 * \text{Negative American Odds}}{\text{-1 * Negatvie American Odds + 100}}$ or $\frac{100}{\text{ Positive American Odds + 100}}$.
+
+DraftKings sets the two spreads at -110, which has an implied probability of 
+
+$\frac{110}{110 + 100} = .5238$.
+
+The sum of these two probabilities is 1.0476. The extra .0476 is known **juice** or the **vig**, and explains how books profit. If Bettor A places a $110 bet on Navy at +1 and Bettor B places \$110 on Army -1, and Army wins by more than 1, DraftKings will pay \$100 to Bettor B, but collect \$110 from Bettor A, leaving the book with a \$10, or 4.76%, profit. This motivates DraftKings to try and keep equal money on both Army and Navy. The same principles apply to the odds set for moneyline and over/under bets across all books, though the amount of vig may vary.
+
+### Removing the Vig
+
+Removing the vig is important to our research in order to be able to identify the true underlying win probability set by each book. To do this, we divide each implied probability by the sums of the implied probabilities. This normalizes the probabilities by removing the vig proportionally from each line. The resulting **fair probabilities** should add up to 1.
 
 Fair Probability : $\text{Fair Probability}_1 =\frac{\text{implied probability}_1}{\text{implied probability}_1 + \text{implied probability}_2}$
+
+Using the DraftKings moneyline odds, we calculate the two implied probabilities ($p_n$ for navy, $p_a$ for army):
+
+$p_n = \frac{100}{100 + 100}=.5$
+$p_a = \frac{120}{120 + 100}=.545$
+
+The fair odds, given by $f_n$ and $f_a$, can then be calculated:
+
+$f_n = \frac{p_n}{p_n+p_a} = \frac{.5}{1.045} = 0.478$
+$f_a = \frac{p_a}{p_n+p_a} = \frac{.545}{1.045} = .522$
+
+Using our method of removing the vig, we believe DraftKings set the win probability of Navy to be .478, and the win probability of Navy to be .522.
 
 ## Different Books Can Have Different Lines
 
@@ -170,13 +202,13 @@ Lines on a given book are constantly changing due to the fact that they are tryi
 
 <center>
 
-![](graphics/pinnacle.png)
+![Lines for Army Navy on Pinnacle](graphics/pinnacle.png)
 
 </center>
 
 <center>
 
-![](graphics/army_navy_fanduel.png)
+![Lines for Army Navy on Fanduel](graphics/army_navy_fanduel.png)
 
 </center>
 
@@ -199,12 +231,12 @@ In the following analysis, we will explore if it is actually possible to be prof
 Our data was scraped from [ActionNetwork's](actionnetwork.com) historical betting database. The company functions similarly to OddsJam, however they are used by gamblers to keep track of their bets. Meaning they are less inclined to keep their data private as they are not selling it to their customers.
 
 We noticed that everytime a page on ActionNetwork with betting data was loaded, it would send an HTTP request with the url 
-https://api.actionnetwork.com/web/v1/scoreboard/{league}?season={year}&week={week}&bookIds={list of book ids} for NFL and NCAA Football, and https://api.actionnetwork.com/web/v1/{league}?&date={YYYYDDMM}&bookIds={list of book ids} for NCAA Basketball, NBA, NHL, and MLB. This allowed us to easily scrape data using the `httr` and `jsonlite` packages by specifying which week and year for NFL and NCAAF, and the date for the other 4 leagues. The list of book ids was taken from https://api.actionnetwork.com/web/v1/books, which contained all the information about the books available and their corresponding IDs. We were able to get historical betting data across multiple different books from as far back as 2017. The code we wrote to scape the data can be found at [data_scraper.R]().
+https://api.actionnetwork.com/web/v1/scoreboard/{league}?season={year}&week={week}&bookIds={list of book ids} for NFL and NCAA Football, and https://api.actionnetwork.com/web/v1/{league}?&date={YYYYDDMM}&bookIds={list of book ids} for NCAA Basketball, NBA, NHL, and MLB. This allowed us to easily scrape data using the `httr` and `jsonlite` packages by specifying which week and year for NFL and NCAAF, and the date for the other 4 leagues. The list of book ids was taken from https://api.actionnetwork.com/web/v1/books, which contained all the information about the books available and their corresponding IDs. We were able to get historical betting data across multiple different books from as far back as 2017. The code we wrote to scape the data can be found at [data_scraper.R](https://github.com/declanelias/comp456DeclanJoe/blob/main/expected_value/scripts/data_scraper.R).
 
 To reproduce our scraped data, run the following code. To get the data without having to scrape the code, go to Load Clean Data section.
 
 ```{r, eval=FALSE, echo=TRUE}
-source("data_scraper.R")
+source("scripts/data_scraper.R")
 
 save_df = function(league) {
   books = "all"
@@ -228,15 +260,15 @@ The most challenging part of the project was cleaning the data. As mentioned abo
 
 To solve these problems, we swapped the lines if they were +-.2 of the value of the "consensus" of the home or away lines set by ActionNetwork (we were not able to figure out how exactly the company calculated consensus, but it is what the public money viewed the line as). Using the consensus value allowed us to know what the home and away lines should have roughly been. From their we did another check, and if the difference was still +- .2, we threw the data out. This allowed us to know that our data was at least not completely inaccurate. 
 
-We then had the problem of having each version of a company in a given state being counted as their own book. For example, BetMGM in Arizona and BetMGM in Nevada each had their own observation, even though they offered the same exact line (or very similar). To solve this problem, we took the average of the observations of each company with multiple books. This work can be found at ()[].
+We then had the problem of having each version of a company in a given state being counted as their own book. For example, BetMGM in Arizona and BetMGM in Nevada each had their own observation, even though they offered the same exact line (or very similar). To solve this problem, we took the average of the observations of each company with multiple books. This work can be found at [book_average.R](https://github.com/declanelias/comp456DeclanJoe/blob/main/expected_value/scripts/book_average.R).
 
 From there we selected the books that had over a certain amount of observations per year for the previous 5 full seasons (there was a wide array of total observations for each book within each league), and then threw out any game that did not have observations for every book. The code used to do this can be found at ()[].
 
 To reproduce the clean code from the raw code scraped above, run the following.
 
 ```{r, eval=FALSE, echo=TRUE}
-source("clean_data.R")
-source("book_average.R")
+source("scripts/clean_data.R")
+source("scripts/book_average.R")
 
 nba_ml = clean_data("nba") %>% average_books("nba") %>% final_clean(2017, 2021, 500)
 nhl_ml = clean_data("nhl") %>% average_books("nhl") %>% final_clean(2017, 2021, 900)
@@ -279,7 +311,7 @@ all_sports_ml = rbind(nba_ml, ncaab_ml, nhl_ml, nfl_ml, mlb_ml, ncaaf_ml)
 
 The first step in answering our research question is to understand how different books perform. This help us decide how to fit a model using different book data, we use Brier Score which is a type of scoring rule, or, in other words, a metric designed to measure the accuracy of probabilistic forecasts. The Brier Score for each prediction is calculated by the function $(p_t - o_t)^2$ where $p_t$ is the predicted home win probability and $o_t$ is the outcome (1 if the home team won, 0 if they loss) at instance $t$. We then calculated the average Brier Score for each book for a given time period to give us a metirc to compare against. 
 
-```{r warning=FALSE, include=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 all_sports_ml %>%
   group_by(league, parent_name) %>%
   filter(season != max(season)) %>% 
@@ -303,7 +335,7 @@ These distributions make sense given the nature of the different leagues. It wou
 
 We now know how the books perform overall, but we still want to see if there is any year to year variation in the performance of the books. We are interested to find out that if a book performs well in one year, is that random chance, or is the given book actually better at making predictions than the other books. 
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 create_bs_by_year_plot = function(league_ml, league) {
   league_ml %>%
     filter(season != max(season)) %>%
@@ -339,6 +371,8 @@ Although for some leagues a logistic regression model performed better than the 
 
 <details>
   <summary>Click for Model Fitting</summary>
+  
+Code for fitting the models can be found at [models.R](https://github.com/declanelias/comp456DeclanJoe/blob/main/expected_value/scripts/models.R)
 
 ```{r}
 get_model_brier_score = function(model_name, n_above_average) {
@@ -380,7 +414,7 @@ fit_all_models = function() {
 
 #### Fit all models
 ```{r warning=FALSE}
-source("models.R")
+source("scripts/models.R")
 constructor(ncaaf_ml %>% 
               filter(book_id != 13) %>% 
               group_by(id) %>% 
@@ -403,7 +437,7 @@ final_fit_ncaaf = fit_top_n_books_model(1, FALSE, TRUE)$`Average of Top 1 Books`
 
 #### Fit all models
 ```{r warning=FALSE}
-source("models.R")
+source("scripts/models.R")
 constructor(nfl_ml %>%
               filter(book_id != 13) %>%
               group_by(id) %>% 
@@ -424,7 +458,7 @@ final_fit_nfl = fit_top_n_books_model(4, FALSE, TRUE)$`Average of Top 4 Books`
 
 #### Fit all models
 ```{r warning=FALSE}
-source("models.R")
+source("scripts/models.R")
 constructor(nba_ml %>%
               filter(book_id != 13) %>%
               group_by(id) %>% 
@@ -446,7 +480,7 @@ final_fit_nba = fit_top_n_books_model(4, FALSE, TRUE)$`Average of Top 4 Books`
 #### Fit all models
 
 ```{r}
-source("models.R")
+source("scripts/models.R")
 constructor(ncaab_ml %>%
               filter(book_id != 13) %>%
               group_by(id) %>% 
@@ -470,7 +504,7 @@ final_fit_ncaab = fit_top_n_books_model(4, FALSE, TRUE)$`Average of Top 4 Books`
 #### Fit all models
 
 ```{r warning=FALSE}
-source("models.R")
+source("scripts/models.R")
 constructor(nhl_ml, 2021)
 fit_all_models()
 ```
@@ -487,7 +521,7 @@ final_fit_nhl = fit_top_n_books_model(1, FALSE, TRUE)$`Average of Top 1 Books`
 ### MLB
 
 ```{r warning=FALSE}
-source("models.R")
+source("scripts/models.R")
 constructor(mlb_ml %>% 
               filter(book_id != 13) %>%
               group_by(id) %>% 
@@ -531,7 +565,7 @@ get_model_reliability_data = function(train_fit, average, mod_league, mod_name) 
 }
 ```
 
-```{r include=FALSE}
+```{r echo=FALSE}
 ncaaf_reliability = get_model_reliability_data(training_ncaaf, average_ncaaf, "NCAAF", "Top Book")
 nfl_reliability = get_model_reliability_data(training_nfl, average_nfl, "NFL", "Average of Top 4 Books")
 nba_reliability = get_model_reliability_data(training_nba, average_nba, "NBA", "Average of Top 4 Books")
@@ -651,7 +685,7 @@ calc_bankroll = function(final_fit, league_ml, initial_bankroll) {
 
 Now that we have our predicted probabilities, we can see if we can use expected value to be profitable. We first calculate the expected value for each line for each observation. This gives us the home and away expected values for each book for each game. We then select the highest expected value for each game. 
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 final_fits = list(final_fit_ncaaf, final_fit_nfl, final_fit_ncaab, final_fit_nba, final_fit_mlb, final_fit_nhl)
 league_mls = list(ncaaf_ml, nfl_ml, ncaab_ml, nba_ml, mlb_ml, nhl_ml)
 leagues = c("NCAAF", "NFL", "NCAAB", "NBA", "MLB", "NHL")
@@ -681,13 +715,17 @@ ev_df %>%
 
 Plotting the expected value vs the predicted win probability, we notice a very interesting trend across each league. The lowest predicted win probability group has the highest average expected value for each league. This indicates that there is more value betting on underdogs with low predicted win probabilities. We expect the betting method to place a lot of bets on heavy underdogs. 
 
+## Betting Method
+
 From here we can choose which games to bet on. We go day by day with our bets, starting with the earliest days. We calculate bet size each day using the Kelly Criterion, a formula derived by J.L. Kelly Jr. to determine the optimal theoretical percentage of bankroll to bet. 
 
 Kelly Criterion = $\frac{bp-q}{b}$ where $b$ is the decimal odds of the money line given by $\frac{l}{100}$ if money line $l$ is positive or $\frac{100}{-l}$ is $l$ is negative.
 
 If the sum of the Kelly Criterion for games that day are over 1, we divide each bet by the sum of Kelly Criterion to allow us to bet 100% of the bankroll (this is an incredibly aggressive and risky method. Future work could be done to decide the optimal way to bet). We then place our bets, if the bet won, the profit and bet sized are returned to the bankroll. If the bet lost, the bet size is subtracted from the bankroll. We calculate profit overall for the day, add it to the bankroll, and move on to the next day.
 
-```{r include=FALSE}
+## Results
+
+```{r warning=FALSE}
 league_bets = NULL
 for (i in 1:6) {
   bets = as.data.frame(calc_bankroll(final_fits[[i]], league_mls[[i]], 100)) %>%
@@ -722,4 +760,6 @@ Overall starting with $600, our method returned a profit of \$168.53, or 28.1%. 
 
 ## Open Questions
 
-As mentioned throughout the project, one of the big limitations was the accuracy of the data. We do not believe our data is accurate enough to be able to say for certain that expected value betting is profitable. Our findings do, however, motivate us to collect accurate data and revisit the work we have done in this paper.
+As mentioned throughout the project, one of the big limitations was the accuracy of the data. We do not believe our data is accurate enough to be able to say for certain that expected value betting is profitable. Our findings do, however, motivate us to collect accurate data and revisit the work we have done in this paper. 
+
+We also found that using a logistic models to fit to the test season and applying the betting algorithm resulted in impossible profits (in the hundreds of thousands to millions). This indicates to us that there was some data leakage somewhere, however we could not find it even after extensive debugging. 
