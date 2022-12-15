@@ -2673,6 +2673,11 @@ particular line being a successful bet. You can then trace through the
 tree using the line values to the bottom where it tells you whether or
 not to bet on the game along with giving a probability for how confident
 the tree is in that outcome.</p>
+<p>This next section takes you through the model fitting and evaluating
+process of the NFL home and away data sets along with guiding you
+through how to interpret the outputs. In addition, the analyses for the
+other fours sports have been included in the document and to access them
+just click on the bar beneath the league name.</p>
 <div id="nfl" class="section level3">
 <h3>NFL</h3>
 <div id="home-team-decision-tree" class="section level4">
@@ -2691,7 +2696,7 @@ if the over/under total for the game is greater than or less than 38. If
 it is less than 38, the decision has already made its decision, dropping
 all the way to the bottom and deciding on not making the bet, saying
 that only 4% of the time it will be a successful bet. On the other hand
-if the total is greater than 38 we would move on to the next node whih
+if the total is greater than 38 we would move on to the next node which
 checks if money line is greater than or less than 321.</p>
 <table class=" lightable-classic" style="font-family: Cambria; width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
@@ -3806,6 +3811,182 @@ doubts apply with a relatively small sample size.</p>
 </details>
 </div>
 </div>
+</div>
+<div id="summarising-decision-tree-results" class="section level2">
+<h2>Summarising Decision Tree Results</h2>
+<p>The table below displays a summary of the results from all of the
+decision trees produced. There are a total of 10 decision trees, two for
+each sport, one of which represents the home team data set and one of
+which represents the road team data set.</p>
+<table class=" lightable-classic-2 lightable-striped" style="font-family: &quot;Arial Narrow&quot;, &quot;Source Sans Pro&quot;, sans-serif; margin-left: auto; margin-right: auto;">
+<caption>
+Compiled Decision Tree Results
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+Team Location
+</th>
+<th style="text-align:right;">
+Data Set Sample Size
+</th>
+<th style="text-align:right;">
+Sensitivity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr grouplength="2">
+<td colspan="3" style="border-bottom: 1px solid;">
+<strong>NFL</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Home
+</td>
+<td style="text-align:right;">
+941
+</td>
+<td style="text-align:right;">
+0.67
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Away
+</td>
+<td style="text-align:right;">
+943
+</td>
+<td style="text-align:right;">
+0.65
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="3" style="border-bottom: 1px solid;">
+<strong>NCAA Football</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Home
+</td>
+<td style="text-align:right;">
+582
+</td>
+<td style="text-align:right;">
+0.62
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Away
+</td>
+<td style="text-align:right;">
+574
+</td>
+<td style="text-align:right;">
+0.75
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="3" style="border-bottom: 1px solid;">
+<strong>MLB</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Home
+</td>
+<td style="text-align:right;">
+6511
+</td>
+<td style="text-align:right;">
+0.55
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Away
+</td>
+<td style="text-align:right;">
+6504
+</td>
+<td style="text-align:right;">
+0.65
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="3" style="border-bottom: 1px solid;">
+<strong>NHL</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Home
+</td>
+<td style="text-align:right;">
+2749
+</td>
+<td style="text-align:right;">
+0.64
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Away
+</td>
+<td style="text-align:right;">
+2793
+</td>
+<td style="text-align:right;">
+0.68
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="3" style="border-bottom: 1px solid;">
+<strong>NBA</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Home
+</td>
+<td style="text-align:right;">
+1761
+</td>
+<td style="text-align:right;">
+0.60
+</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left: 2em;" indentlevel="1">
+Away
+</td>
+<td style="text-align:right;">
+1739
+</td>
+<td style="text-align:right;">
+0.62
+</td>
+</tr>
+</tbody>
+</table>
+<p>As we can see from the results of this table, sensitivity-wise all of
+the decision trees performed well. When looking solely at the
+sensitivities, the only model that I would be concerned with using for
+real bets would be the home MLB data set. While placing a positive value
+bet 55% of the time is good enough to likely have positive value in your
+betting overall, this would likely be a very low margin and depending on
+how much value you are getting on each bet, might barely be enough to
+cover the “vig.” That being said, the reason why sample size was
+included in this data set as well is because we have to be careful just
+looking at sensitivity for these small sample sizes. In particular the
+away NCAAF model seems to be a great model to start placing bets on with
+a sensitivity of 75%, but with a sample size of just 574 the overall
+validity of this model is extremely questionable and I would refrain
+from placing real bets on it.</p>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>

@@ -571,6 +571,8 @@ Once again, while this model does a good job at predicting when not to bet, with
 
 After producing the logistic and random forest models for each sport and deeming them as failures, we continued fitting one more model to each data set, this time using decision trees. Decision trees are able to split quantitative variables into many binary inequalities at the values it finds to be the most influential on the probability of a particular line being a successful bet. You can then trace through the tree using the line values to the bottom where it tells you whether or not to bet on the game along with giving a probability for how confident the tree is in that outcome. 
 
+This next section takes you through the model fitting and evaluating process of the NFL home and away data sets along with guiding you through how to interpret the outputs. In addition, the analyses for the other fours sports have been included in the document and to access them just click on the bar beneath the league name. 
+
 ### NFL
 
 #### Home Team Decision Tree
@@ -600,7 +602,7 @@ fit_mod %>%
 
 ```
 
-The visualization above is the final model output for betting on a home team in the NFL. You can imagine this like a plinko board, where you take your line and at each split, which are called nodes, you can check the value of that variable in the line and based on whether the value is greater than or less than the one displayed in the tree, you can follow the path it leads. The "Yes" or "No" values in each node represents if you stopped tracing the line at that point what decision the model makes on making the bet or not. For example at the root node, which is the first and most impactful split in the tree, we would check if the over/under total for the game is greater than or less than 38. If it is less than 38, the decision has already made its decision, dropping all the way to the bottom and deciding on not making the bet, saying that only 4% of the time it will be a successful bet. On the other hand if the total is greater than 38 we would move on to the next node whih checks if money line is greater than or less than 321.
+The visualization above is the final model output for betting on a home team in the NFL. You can imagine this like a plinko board, where you take your line and at each split, which are called nodes, you can check the value of that variable in the line and based on whether the value is greater than or less than the one displayed in the tree, you can follow the path it leads. The "Yes" or "No" values in each node represents if you stopped tracing the line at that point what decision the model makes on making the bet or not. For example at the root node, which is the first and most impactful split in the tree, we would check if the over/under total for the game is greater than or less than 38. If it is less than 38, the decision has already made its decision, dropping all the way to the bottom and deciding on not making the bet, saying that only 4% of the time it will be a successful bet. On the other hand if the total is greater than 38 we would move on to the next node which checks if money line is greater than or less than 321.
 
 ```{r echo = FALSE}
 fit_mod %>%
@@ -1362,6 +1364,33 @@ Stats %>%
 The away NBA model shows very similar success rates to the home model, performing well with a sensitivity of about 62%. Still, the same doubts apply with a relatively small sample size.
 
 </details>
+
+## Summarising Decision Tree Results
+
+The table below displays a summary of the results from all of the decision trees produced. There are a total of 10 decision trees, two for each sport, one of which represents the home team data set and one of which represents the road team data set. 
+
+```{r, echo=FALSE}
+league <- c("NFL", "NFL", "NCAAF", "NCAAF", "MLB", "MLB", "NHL", "NHL", "NBA", "NBA")
+Location <- c("Home", "Away","Home", "Away","Home", "Away","Home", "Away","Home", "Away")
+Sample <- c(941,943,582,574,6511,6504,2749,2793,1761,1739)
+Sens <- c(0.67,0.65,0.62,0.75,0.55,0.65,0.64,0.68,0.60,0.62)
+
+Summary <- data.frame(league,Location,Sample,Sens)
+
+Summary <- Summary %>%
+  select(-league)
+
+Summary %>%
+  kbl( caption = "Compiled Decision Tree Results", col.names = c("Team Location", "Data Set Sample Size", "Sensitivity")) %>%
+    kable_classic_2("striped", full_width = T) %>%
+    pack_rows("NFL", 1, 2) %>%
+    pack_rows("NCAA Football", 3, 4) %>%
+    pack_rows("MLB", 5, 6) %>%
+    pack_rows("NHL", 7, 8) %>%
+    pack_rows("NBA", 9, 10)
+```
+
+As we can see from the results of this table, sensitivity-wise all of the decision trees performed well. When looking solely at the sensitivities, the only model that I would be concerned with using for real bets would be the home MLB data set. While placing a positive value bet 55% of the time is good enough to likely have positive value in your betting overall, this would likely be a very low margin and depending on how much value you are getting on each bet, might barely be enough to cover the "vig." That being said, the reason why sample size was included in this data set as well is because we have to be careful just looking at sensitivity for these small sample sizes. In particular the away NCAAF model seems to be a great model to start placing bets on with a sensitivity of 75%, but with a sample size of just 574 the overall validity of this model is extremely questionable and I would refrain from placing real bets on it.
 
 ## Conclusion
 
