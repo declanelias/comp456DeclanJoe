@@ -3,7 +3,6 @@ title: "Expected Value Final Work"
 author: "Declan Elias and Joe Margolis"
 date: '2022-12-04'
 output:
-  pdf_document: default
   html_document: default
 ---
 
@@ -187,13 +186,13 @@ Fair Probability : $\text{Fair Probability}_1 =\frac{\text{implied probability}_
 
 Using the DraftKings moneyline odds, we calculate the two implied probabilities ($p_n$ for navy, $p_a$ for army):
 
-$p_n = \frac{100}{100 + 100}=.5\\$
-$p_a = \frac{120}{120 + 100}=.545$
+$$p_n = \frac{100}{100 + 100}=.5 \\
+p_a = \frac{120}{120 + 100}=.545$$
 
 The fair odds, given by $f_n$ and $f_a$, can then be calculated:
 
-$f_n = \frac{p_n}{p_n+p_a} = \frac{.5}{1.045} = 0.478\\$
-$f_a = \frac{p_a}{p_n+p_a} = \frac{.545}{1.045} = .522$
+$$f_n = \frac{p_n}{p_n+p_a} = \frac{.5}{1.045} = 0.478\\
+f_a = \frac{p_a}{p_n+p_a} = \frac{.545}{1.045} = .522$$
 
 Using our method of removing the vig, we believe DraftKings set the win probability of Navy to be .478, and the win probability of Navy to be .522.
 
@@ -327,13 +326,13 @@ all_sports_ml %>%
   geom_histogram(binwidth = .001) +
   facet_wrap(~league) + 
   theme_bw() +
-  labs(x = "Brier Score", y = "Count", title = "Distribution of Books When Compared To The Average")
+  labs(x = "Brier Score", y = "Count", title = "Distribution of Books")
 
 ```
 
 We notice with NHL, and to a lesser extent the MLB and NBA, that most books perform very similarly. With the NHL, all books perform practically the same. MLB and NBA offer a little more variation in performances, but are still have a majority grouped around the same brier score. NFL, NCAA Football (NCAAF), and NCAA Mens Basketball (NCAAB),  offer a little more variation than NBA and MLB. A singular outlier vastly outperforms the other books in the NFL. NCAAB and especially NCAAF, distribution. NCAAF clearly has the largest variation in book performance.
 
-These distributions make sense given the nature of the different leagues. It would follow that leagues like the MLB, NBA, and NHL, which play significantly more games than the NFL, NCAAF, and NCAAB, would be easier to predict. As there is less variation in the outcome game to game and vastly more data. It also follows that NCAAB and NCAAF would be difficult to predict due to the lower amount of games, and the significant decrease in talent accross the teams leading to more variation in the outcomes.
+These distributions make sense given the nature of the different leagues. It would follow that leagues like the MLB, NBA, and NHL, which play significantly more games than the NFL, NCAAF, and NCAAB, would be easier to predict. As there is less variation in the outcome game to game and vastly more data. It also follows that NCAAB and NCAAF would be difficult to predict due to the lower amount of games, and the significant decrease in talent across the teams leading to more variation in the outcomes.
 
 We now know how the books perform overall, but we still want to see if there is any year to year variation in the performance of the books. We are interested to find out that if a book performs well in one year, is that random chance, or is the given book actually better at making predictions than the other books. 
 

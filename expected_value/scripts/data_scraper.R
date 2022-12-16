@@ -64,31 +64,6 @@ clean_df = function(df, week, season) {
 
 
 
-get_football_df = function(league, books, start_year, end_year) {
-  user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
-  url = paste("https://api.actionnetwork.com/web/v1/scoreboard/", league, "?", sep = "") %>%
-    param_set("period", "game")
-  
-  df = NULL  
-  for (season in start_year:end_year) {
-    
-    for (week in 1:20) {
-      temp_url = param_set(url, "week", week) %>% 
-        param_set("season", season) %>% 
-        param_set("bookIds", paste(books, collapse = ","))
-      resp = GET(temp_url, user_agent(user_agent))
-      resp_df = jsonlite::fromJSON(content(resp, "text"))$games
-      if (length(resp_df) != 0 & "odds" %in% colnames(resp_df) & "boxscore" %in% colnames(resp_df)) {
-        df = rbind(df, clean_df(resp_df, week, season))
-        print(paste("finished week",week, season))
-      }
-    }
-  }
-  
-  return(df)
-}
-
-
 format_date = function(date) {
   date = as.character(date)
   date = gsub("-", "", date)
