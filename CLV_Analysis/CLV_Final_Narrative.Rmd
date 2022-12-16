@@ -25,11 +25,11 @@ library(kableExtra)
 
 ## Introduction
 
-For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com), a site that compiles game lines for all sports, and most importantly all books, to allow for arbitrage gambling to help a person select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he bet on against what the closing line was at game time to see if his bet had a better value than the closing line. Across his site Monahan has posted his own success from using his arbitrage strategies, posting earnings of $400,000, a value so good that we wanted to investigate his process. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
+For this project, we wanted to investigate ways in which someone could over time receive positive return from sports gambling, particularly in a way where we remove the biases of having sports knowledge and focusing solely on leveraging expected value. What originally began as a dead end project that just examined trends in college football gambling results was turned into something much more applicable when we met with an expert in the field named Alex Monahan, the co-founder of [OddsJam.com](oddsjam.com) which is a site that compiles game lines for all sports, and most importantly all books, to allow for arbitrage gambling where a person can select a line from the book with the best value possible, resulting in positive expected value over time. In addition to comparing between books, Monahan also used the movement of lines of a particular game as a way to track his success, checking the line he placed his bet on against what the closing line was at game time to see if his bet had a better value than at closing. Across his site Monahan has posted his own success from using his arbitrage strategies, posting earnings of $400,000, a value so good that we wanted to investigate his process. This paper will further discuss why lines move and how this impacts expected value gambling, along with creating predictive models for the five major U.S. sports, NFL, NCAA Football, MLB, NBA, and NHL which are devised to help a gambler decide which money lines are most likely to be more valuable than what they will close at.
 
 ## What is Sports Betting?
 
-If a game is being played, people are going to bet on it. Humans have been gambling on sports since ancient times, but recent legislation in the United States has allowed sports betting to become legal in 30 states, with many other states in heated debates over legalizing it themselves as seen in the graphic below displaying which states have legalized sports betting through various platforms. Over $57.2 billion dollars were bet on U.S. licensed sportsbooks in 2021, and that does not take into account offshore websites used by those living in states where sports betting is not yet legal. 
+If a game is being played, people are going to bet on it. Humans have been gambling on sports since ancient times, but recent legislation in the United States has allowed sports betting to become legal in 30 states, with many other states in heated debates over legalizing it themselves as seen in the graphic below displaying which states have legalized sports betting through various platforms. Over $57.2 billion dollars were bet on U.S. licensed sports books in 2021, and that does not take into account offshore websites used by those living in states where sports betting is not yet legal or underage gamblers. 
 
 ```{r eval=FALSE, message=FALSE, include=FALSE}
 library(albersusa)
@@ -66,7 +66,7 @@ load("Narrative_Graphics/us_map_betting")
 plot(us_map_betting)
 ```
 
-As sports gambling becomes more prominent, data analysis and modeling has become a huge area of study as people try to make gambling profitable. All over social media, people who have developed models that have shown success (these people are known as "sharps"), look to sell their picks to the public or average betters, claiming that even with the cost of their picks users will still win enough to be profitable. Unfortunately, many of these sellers only claimed their sharp status with early luck off of a small sample size on their models and at the end of the day, when solely trying to predict winners and losers of a game the Vegas models tend to come out on top.
+As sports gambling becomes more prominent, data analysis and modeling has become a huge area of study as people try to make gambling profitable. All over social media, people who have developed models that have shown success (these people are known as "sharps"), look to sell their picks to the public bettors, claiming that even with the cost of their picks, users will still win enough to be profitable. Unfortunately, many of these sellers only claimed their sharp status with early luck off of a small sample size on their models and at the end of the day, when solely trying to predict winners and losers of a game the Vegas models tend to come out on top.
 
 ```{r eval=FALSE, message=FALSE, include=FALSE}
 load("basic_betting_data/nba_raw.rdata")
@@ -146,24 +146,24 @@ load("Narrative_Graphics/all_sports_reliability_plot")
 plot(all_sports_reliability_plot)
 ```
 
-The graphic above displays a reliability plot for the last 5 full seasons of the MLB, NBA, NCAA Football, NFL, and NHL. The plots display the cumulative frequency of true wins on the y axis, and the average predicted win probabilities on the x axis. Reliability plots indicate how well calibrated predictions made by a model are. The reliability plot of a perfectly calibrated model, meaning a prediction with probability $p$ is correct $p * 100$ percent of the time, will be linear with slope equal to 1. Each plot is almost a straight line, with slight variations, which indicates how incredible sportsbooks are at predict the outcomes.
+The graphic above displays a reliability plot for the last 5 full seasons of the MLB, NBA, NCAA Football, NFL, and NHL. The plots display the cumulative frequency of true wins on the y-axis, and the average predicted win probabilities on the x-axis. Reliability plots indicate how well calibrated predictions made by a model are. The reliability plot of a perfectly calibrated model, meaning a prediction with probability $p$ is correct $p * 100$ percent of the time, will be linear with slope equal to 1. Each plot is almost a straight line, with slight variations, which indicates how incredible sports books are at predicting the outcomes.
 
-Most gamblers bet for fun. These are known as "square bettors". They make up the overwhelming majority of bettors and view gambling as a form of entertainment. Most "squares" do not expect to be making money in the long run, and accept the fact that "the house always wins." On the other hand, the "sharp bettors" are the ones trying to create models to surpass the success rates noticed above. This however, is incredibly difficult, and requires a deeply advanced understanding of statistics. Because of the amount of money being gambled daily, books employ incredibly intelligent statisticians to create the prediction models. To beat the books in this way requires beating a team of highly paid, educated, and intelligent data scientists which is impractical.
+Most gamblers bet for fun. These are known as "square bettors". They make up the overwhelming majority of bettors and view gambling as a form of entertainment. Most "squares" do not expect to be making money in the long run, and accept the fact that "the house always wins." On the other hand, the "sharp bettors" are the ones trying to create models to surpass the success rates noticed above. This however, is incredibly difficult and requires a deeply advanced understanding of statistics. Because of the amount of money being gambled daily, books employ incredibly intelligent statisticians to create the prediction models. To beat the books in this way requires beating a team of highly paid, educated, and intelligent data scientists which is impractical.
 
-However, there are other ways that people claim can be profitable in the long run, which we will explore in this project. But before we get any deeper into our analysis, we should go over how sports betting actually works, and introduce some common terminology.
+However, there are other ways that people claim can be profitable in the long run, which we will explore in this project. But before we get any deeper into our analysis, we should go over how sports betting actually works and introduce some common terminology.
 
 ## How Sports Betting Works
 
-Sports books offer many different ways to bet on sports, including bets on team outcomes, player stats, and even live bets which are updated lines that are produced as a game is being playes. Typically the most common types of bets are the team outcome bets which include straight bets, money line bets, and over/under bets. Straight bets refer to betting on a team to win or lose by a certain amount of points, known as the spread. A money line bet means the gambler picks a team to win straight up. An over/under bet is when a bettor gambles on the combined score being above or below a certain number. Over/under bets can also be applied to a singular team in the game, predicting how many points that team alone will score. For each of these bets, the book sets a probability in the form of a line. In the United States the probabilities are displayed through American odds, which come in the form of a number (known as a line) greater than or equal to 100, or less than or equal to -100. Positive values indicate that if a bettor bets $100, they will win the amount of the line plus their original bet. Negative values mean that a bettor has to bet the size of the line to win \$100 plus their original bet. 
+Sports books offer many different ways to bet on sports, including bets on team outcomes, player stats, and even live bets which are updated lines that are produced as a game is being played. Typically the most common types of bets are the team outcome bets which include straight bets, money line bets, and over/under bets. Straight bets refer to betting on a team to win or lose by a certain amount of points, known as the spread. A moneyline bet means the gambler picks a team to win straight up. An over/under bet is when a bettor gambles on the combined score being above or below a certain number. Over/under bets can also be applied to a singular team in the game, predicting how many points that team alone will score. For each of these bets, the book sets a probability in the form of a line. In the United States the probabilities are displayed through American odds, which come in the form of a number (known as a line) greater than or equal to 100, or less than or equal to -100. Positive values indicate that if a bettor bets $100, they will win the amount of the line plus their original bet. Negative values mean that a bettor has to bet the size of the line to win \$100 plus their original bet. 
 
 <center>
 
 ![Spread, Total, and Money Line options taken from DraftKings.com for the Army vs. Navy game on 12/10/22](Narrative_Graphics/army_navy.png)
 </center>
 
-Take this image, for example. It is a screen shot of an offering from one of the most used books in the U.S., DraftKings.com. It is for a college football game taking place on Saturday, December 10, 2022 between Navy and Army. The money line column is the easiest to understand. A $100 bet on Navy to win at +100 American odds would return \$100 in winnings plus the original \$100 bet, so \$200 in total. A \$120 bet on Army to win at -120 American odds would also win \$100, and return the orignal bet for a total of \$220. 
+Take this image, for example. It is a screen shot of an offering from one of the most used books in the U.S., DraftKings.com. It is for a college football game taking place on Saturday, December 10, 2022 between Navy and Army. The money line column is the easiest to understand. A $100 bet on Navy to win at +100 American odds would return \$100 in winnings plus the original \$100 bet, so \$200 in total. A \$120 bet on Army to win at -120 American odds would also win \$100, and return the original bet for a total of \$220. 
 
-After understanding how American odds work, the other two columns are pretty straightforward. When betting on the spread, a positive value means that a bet on that team will push (get just the bet back) if the team loses by the spread and win if the team loses by less than the spread. Conversely, a negative value means that a team has to win by more than the spread to win the bet. DraftKings thinks that Army is a 1 point favorite and is offering a line of -110. This means a bet of $110 would win \$100 if Army wins by more than 1. If they win by 1, the original bet will be returned. Similarly, a bet on the total over (indicated by O 33.5 in the picture) means the bettor will win if the sum of the points scored by both teams is 34 or more (the .5 means that the bet cannot push), and a bet on the under means the bettor will win if the sum of the points is 33 or less. In addition, while not included in this image, there is often an option to bet on the total over for a specific team in the game, which is the same idea as the total in the graphic only it would rely only on the score of Army or Navy.
+After understanding how American odds work, the other two columns are pretty straightforward. When betting on the spread, a positive value means that a bet on that team will push (get just the bet back) if the team loses by the spread and win if the team loses by less than the spread. Conversely, a negative value means that a team has to win by more than the spread to win the bet. DraftKings thinks that Army is a 1 point favorite and is offering a line of -110. This means a bet of $110 would win \$100 if Army wins by more than 1. If they win by 1, the original bet will be returned. Similarly, a bet on the total over (indicated by O 33.5 in the picture) means the bettor will win if the sum of the points scored by both teams is 34 or more (the .5 means that the bet cannot push), and a bet on the under means the bettor will win if the sum of the points is 33 or less. In addition, while not included in this image, there is often an option to bet on the total over for a specific team in the game, which is the same idea as the total in the graphic only it would rely only on the individual score of Army or Navy.
 
 In football, the spread and the over / under bets are usually regarded as a 50 / 50 bet, however books usually price coinflips at -110 on each side. A line of -110 has an implied probability of 52.38% ($\frac{110}{110 + 100} * 100$), even though the true probability, also known as the "fair" probability should be .5 on each side ($\frac{.5238}{.5238 + .5238} * 100$) This means the sum of the two probabilities of the possible outcomes is 104.76%. The extra 4.76% is known as the "juice" or the "vig", and it is how the books make their profit. If Bettor A places a $110 bet on Navy at +1 and Bettor B places \$110 on Army -1, and Army wins by more than 1, DraftKings will pay \$100 to Bettor B, but collect \$110 from Bettor A, leaving the book with a \$10, or 4.76%, profit. This motivates DraftKings to try to keep equal dollar amounts of bets on each side, meaning that the company will change the spread or the line if there is an imbalance. 
 
@@ -195,13 +195,13 @@ Eventually, a game has to begin and the pre-game lines will no longer change, re
 ![Top two observations of Monahan's log to track successful bets based on closing line value taken from OddsJam.com](Narrative_Graphics/CLVCheck.png)
 </center>
 
-For example, this is an example of the log Monahan keeps to track his success rate on his bets. In this, he uses the closing line for Pinnacle as his baseline bet, regardless of the book he is gambling on under the assumption that Pinnacle is the most accurate book available. The first bet was placed on total strikeouts for pitcher Cal Quantrill at over 4.5 (an example of a bet on individual player stats called a "prop bet") at a line of +108. At closing, Pinnacle valued this line at -109. This bet would be deemed as a successful bet for Monahan since the value of +108 is significantly better than -109.
+The image above is an example of the log Monahan keeps to track his success rate on his bets. In this, he uses the closing line for Pinnacle as his baseline bet, regardless of the book he is gambling on under the assumption that Pinnacle is the most accurate book available. The first bet was placed on total strikeouts for pitcher Cal Quantrill at over 4.5 (an example of a bet on individual player's stats called a "prop bet") at a line of +108. At closing, Pinnacle valued this line at -109. This bet would be deemed as a successful bet for Monahan since the value of +108 is significantly better than -109.
 
-On the other hand the second bet was places through Caesars on the money line of the game ata a value of -115, whereas Pinnacle closed as a better value of -109, deeming this as an unsuccessful bet for Monahan.
+On the other hand the second bet was placed through Caesars on the money line of the game at a a value of -115, whereas Pinnacle closed at a better value of -109, deeming this as an unsuccessful bet for Monahan.
 
 ## Research Question
 
-In the following analysis, we will attempt to model the movement of line data to predict which money lines in each of the five major U.S. sports are most likely to decrease in value at closing, giving insight into what lines will result in successful bets and allowing someone to use Closing Line Value as a proactive tool for gambling as opposed to the retroactive way Monahan has implemented it.
+In the following analysis, we will attempt to model the movement of line data to predict which money lines in each of the five major U.S. sports are most likely to decrease in value at closing, giving insight into what lines will result in successful bets and allowing someone to use closing line value as a proactive tool for gambling as opposed to the retroactive way Monahan has implemented it.
 
 ## Data Set
 
@@ -209,13 +209,13 @@ In the following analysis, we will attempt to model the movement of line data to
 
 Our data was scraped from [ActionNetwork's](actionnetwork.com) historical betting database. The company functions similarly to OddsJam, however they are used by gamblers to keep track of their bets. Meaning they are less inclined to keep their data private as they are not selling it to their customers.
 
-We noticed that everytime a page on ActionNetwork with betting data was loaded, it would send an HTTP request with the url 
+We noticed that every time a page on ActionNetwork with betting data was loaded, it would send an HTTP request with the url 
 https://api.actionnetwork.com/web/v1/scoreboard/{league}?season={year}&week={week}&bookIds={list of book ids} for NFL and NCAA Football, and https://api.actionnetwork.com/web/v1/{league}?&date={YYYYDDMM}&bookIds={list of book ids} for NCAA Basketball, NBA, NHL, and MLB. This allowed us to easily scrape data using the `httr` and `jsonlite` packages by specifying which week and year for NFL and NCAAF, and the date for the other 3 leagues. The list of book ids was taken from https://api.actionnetwork.com/web/v1/books, which contained all the information about the books available and their corresponding IDs. We were able to get historical betting data across multiple different books from as far back as 2017. 
 
-The code we wrote to srcape the data can be found at [data_scraper.R](). To reproduce our scraped data, run the following code. To get the data without having to scrape the code, you can load the dataset `CLV_Analysis/betting_data.rdata`.
+The code we wrote to scrape the data can be found at [data_scraper.R](). To reproduce our scraped data, run the following code. To get the data without having to scrape the code, you can load the data set `CLV_Analysis/betting_data.rdata`.
 
 ```{r, eval=FALSE, echo=TRUE}
-source("data_scraper.R")
+source("CLV_Analysis/data_scraper.R")
 
 save_df = function(league) {
   books = "all"
@@ -238,6 +238,7 @@ This was the first step to getting a data set with all of the game ids for all o
 The code used for this can be found in [line_movement_data.R](). To scrape this data you can replace the capitalized `LEAGUE` parts with the capitalized form of the respective league you want to scrape or the data sets for each sport can be loaded from the directory `CLV_Analysis/LEAGUE_data/LEAGUE_movement_df.rdata`
 
 ```{r, eval=FALSE, echo=TRUE}
+source("CLV_Analysis/line_movement_data.R")
 LEAGUE <- betting_data %>%
   filter(league_name == "LEAGUE") %>%
   filter(season == 2022 | season == 2021 | season == 2019 | season == 2017) %>%
@@ -278,15 +279,17 @@ for (id in LEAGUE$id) {
 
 ### Cleaning the Data For Application
 
-At the next step, we removed any variables that would not be applicable to a user who only has access to the game lines, along with any indexing variables. These were mainly variables that described the public betting distribution on each of the lines including money line, spread, and over/under bets. 
+At the next step, we removed any variables that would not be applicable to a user who only has access to the game lines, along with any indexing variables. These were mainly variables that described the public betting distribution on each of the lines including moneyline, spread, and over / under bets. 
 
 In addition, we split each observation into two, one for the home team and one for the away team in order to replicate the fact that both would be options for someone to bet on.
 
-Finally, we implemented a binary variable `make_bet`. This took the closing money line value and compared it to the money line of each previous input, giving a `Yes` input to observations where money line was greater than the closing money line and a `No` input to those that were less than or equal to the closing line. This gave us the main output variable we will use for our classification predictive modeling for predicting a successful bet.
+Finally, we implemented a binary variable `make_bet`. This took the closing moneyline value and compared it to the moneyline of each previous input, giving a `Yes` input to observations where money line was greater than the closing money line and a `No` input to those that were less than or equal to the closing line. This gave us the main output variable we will use for our classification predictive modeling for predicting a successful bet.
 
 The code used for this can be found in [line_movement_compiled.R](). To clean the data yourself you can implement the following code, once again replacing the capitalized LEAGUE with the capitalized form of the league name of interest. You can also load the already cleaned data set in the directory `CLV_Analysis/LEAGUE_data/LEAGUE_movement_split_df.rdata`
 
 ```{r, eval=FALSE, echo=TRUE}
+source("CLV_Analysis/line_movement_compiled.R")
+
 LEAGUE_movement_df <- LEAGUE_movement_df %>%
   mutate(inserted = gsub("T"," ", inserted)) %>%
   mutate(inserted = gsub("Z","", inserted)) %>%
@@ -354,9 +357,9 @@ LEAGUE_lines_split <- away_LEAGUE %>%
 
 ### Cleaning the Data for Leaks
 
-At first, it seemed as if this was going to be a viable data set to be implemented for modeling, but on first attempt leaks in the data were obvious. Results were giving accuracy measures of up to 96% on the majority of our models, and while it would be great for profit if this were possible, it was apparent that issues in the data were causing this unreasonable success. We pinpointed the first issue to be  that keeping each change of the line data in the data set made it too easy for the models to just track the movement of the line based on the previous input and make a much more accurate prediction of its direction, something that would not be applicable to a gambler who does not have access to the previous line values. To remedy this, we randomly sampled one of the previous line observations from each game so that the models could not trace through the full movement of that line. 
+At first, it seemed as if this was going to be a viable data set to be implemented for modeling, but on first attempt leaks in the data were obvious. Results were giving accuracy measures of up to 96% on the majority of our models, and while it would be great for profit if this were possible, it was apparent that issues in the data were causing this unreasonable success. We pinpointed the first issue to be that keeping each change of the line data in the data set made it too easy for the models to just track the movement of the line based on the previous input and make a much more accurate prediction of its direction, something that would not be applicable to a gambler who does not have access to the previous line values. To remedy this, we randomly sampled one of the previous line observations from each game so that the models could not trace through the full movement of that line. 
 
-The next leak was being caused by trying to make a model that did not distinguish between home and away teams. Since the all of the lines are symmetric between home and away teams, and if say the home line was increasing in value then the away line would be decreasing, the models could pick up that if a certain line was saying yes to placing the bet, there was another line that was the opposite of that in the data set that would be a no bet. To fix this we had to split the data again into two data sets, one for home teams and one for away teams and run separate models on each.
+The next leak was being caused by trying to make a model that did not distinguish between home and away teams. Since all of the lines are symmetric between home and away teams, and if say the home line was increasing in value then the away line would be decreasing, the models could pick up that if a certain line was saying yes to placing the bet, there was another line that was the opposite of that in the data set that would be a no bet. To fix this we had to split the data again into two data sets, one for home teams and one for away teams and run separate models on each.
 
 This cleaning was run at the front end of all of the final modeling files which can be found in the directory `CLV_Analysis/LEAGUE_CLV_Analysis.Rmd`. To run this cleaning yourself you can implement the following code with the same replacement techniques as before.
 
@@ -400,10 +403,11 @@ Samples %>%
   kable_classic_2()
 ```
 
-
 ## Failed Models
 
-Once the data was finally ready, we were able to start modeling. Unfortunately, the process was not always perfect. For both the home and away data sets for each league we ran three different classification techniques, logistic modeling, random forests, and decision trees. For ever single data set we got the same result with the logistic and random forest models failing and having the most success with our random forest models. To quickly give insight on why the logistic and random forest models were deemed failures, this section will run through the modeling process for the home NFL data. To see the results for the rest of the models the files can be found in the directory `CLV_Analysis/LEAGUE_CLV_Analysis.Rmd`.
+Once the data was finally ready, we were able to start modeling. Unfortunately, the process was not always perfect. For both the home and away data sets for each league we ran three different classification techniques, logistic modeling, random forests, and decision trees. For every data set we got the similar results with the logistic and random forest models failing and having the most success with our decision tree models. 
+
+To quickly give insight on why the logistic and random forest models were deemed failures, this section will run through the modeling process for the home NFL data. To see the results for the rest of the models the files can be found in the directory `CLV_Analysis/LEAGUE_CLV_Analysis.Rmd`.
 
 ### Logistic Models
 
@@ -477,7 +481,7 @@ This table does give some insight on the affect of these variables. We notice th
 
 #### Logistic Model Results
 
-After setting the model, we then ran a ten cross validation folds test on the model to mimic how this model would likely work against outside data. This is where we noticed the failure in this model as seen in the test statistics below.
+After setting the model, we then ran a ten cross validation folds test on the model to mimic how this model would work against outside data. This is where we noticed the failure in this model as seen in the test statistics below.
 
 ```{r echo = FALSE}
 # CV Fit Model
@@ -549,7 +553,7 @@ model_output %>%
     vip(num_features = 30) + theme_classic() #based on impurity
 ```
 
-Unsurprisingly from this model, we notice that movements in money line tend to have the most impact on the probability of predicting that a bet should be placed on a certain line, followed by the game total, then team total, and lastly the spread having the least effect.
+Unsurprisingly from this model, we notice that movements in moneyline tend to have the most impact on the probability of predicting that a bet should be placed on a certain line, followed by the game total, then team total, and lastly the spread having the least effect.
 
 #### Random Forest Results
 
@@ -565,11 +569,13 @@ mtry4Conf %>%
     kable_classic(full_width = F, html_font = "Cambria")
 ```
 
-Once again, while this model does a good job at predicting when not to bet, with a specificity of about 73%, this model still fails where it counts with a sensitivity of only 32%. Just like the logistic model this in far to low to ever risk money on.
+Once again, while this model does a good job at predicting when not to bet, with a specificity of about 73%, this model still fails where it counts with a sensitivity of only 32%. Just like the logistic model this is far to low to ever risk money on.
 
 ## Final Models
 
 After producing the logistic and random forest models for each sport and deeming them as failures, we continued fitting one more model to each data set, this time using decision trees. Decision trees are able to split quantitative variables into many binary inequalities at the values it finds to be the most influential on the probability of a particular line being a successful bet. You can then trace through the tree using the line values to the bottom where it tells you whether or not to bet on the game along with giving a probability for how confident the tree is in that outcome. 
+
+This next section takes you through the model fitting and evaluating process of the NFL home and away data sets along with guiding you through how to interpret the outputs. In addition, the analyses for the other fours sports have been included in the document and to access them just click on the bar beneath the league name. 
 
 ### NFL
 
@@ -600,7 +606,7 @@ fit_mod %>%
 
 ```
 
-The visualization above is the final model output for betting on a home team in the NFL. You can imagine this like a plinko board, where you take your line and at each split, which are called nodes, you can check the value of that variable in the line and based on whether the value is greater than or less than the one displayed in the tree, you can follow the path it leads. The "Yes" or "No" values in each node represents if you stopped tracing the line at that point what decision the model makes on making the bet or not. For example at the root node, which is the first and most impactful split in the tree, we would check if the over/under total for the game is greater than or less than 38. If it is less than 38, the decision has already made its decision, dropping all the way to the bottom and deciding on not making the bet, saying that only 4% of the time it will be a successful bet. On the other hand if the total is greater than 38 we would move on to the next node whih checks if money line is greater than or less than 321.
+The visualization above is the final model output for betting on a home team in the NFL. You can imagine this like a plinko board, where you take your line and at each split, which are called nodes, you can check the value of that variable in the line and based on whether the value is greater than or less than the one displayed in the tree, you can follow the path it leads. The "Yes" or "No" values in each node represents if you stopped tracing the line at that point what decision the model makes on making the bet or not. For example at the root node, which is the first and most impactful split in the tree, we would check if the over/under total for the game is greater than or less than 38. If it is less than 38, the decision has already made its decision, dropping all the way to the bottom and deciding on not making the bet, saying that only 4% of the time it will be a successful bet. On the other hand if the total is greater than 38 we would move on to the next node which checks if money line is greater than or less than 321.
 
 ```{r echo = FALSE}
 fit_mod %>%
@@ -876,6 +882,9 @@ The increased complexity of this model compared to the home model pays off big t
 
 ### MLB
 
+<details>
+  <summary>Click for MLB Analysis</summary>
+
 #### Home Team Decision Tree
 
 ```{r include=FALSE}
@@ -1032,8 +1041,13 @@ Stats %>%
 
 Interestingly, the away team model greatly outperforms the home team model with a sensitivity of almost 65%. This also compares well to the sensitivities for the football models, even with the MLB having less time for line movement. Coupled with the MLB having the greatest sample size I would be most confident in placing real money bets through this model of any we produced.
 
+</details>
+
 ### NHL
 
+<details>
+  <summary>Click for NHL Analysis</summary>
+  
 #### Home Team Decision Tree
 
 ```{r include=FALSE}
@@ -1190,7 +1204,12 @@ Stats %>%
 
 In addition to being an easier model to simplify if desired, the away NHL model also performs slightly better than the home model at about 68% sensitivity. Still, the relatively small sample size casts doubt on placing real bets through this model.
 
+</details>
+
 ### NBA
+
+<details>
+  <summary>Click for NBA Analysis</summary>
 
 #### Home Team Decision Tree
 
@@ -1348,7 +1367,34 @@ Stats %>%
 
 The away NBA model shows very similar success rates to the home model, performing well with a sensitivity of about 62%. Still, the same doubts apply with a relatively small sample size.
 
+</details>
 
+## Summarising Decision Tree Results
+
+The table below displays a summary of the results from all of the decision trees produced. There are a total of 10 decision trees, two for each sport, one of which represents the home team data set and one of which represents the road team data set. 
+
+```{r, echo=FALSE}
+league <- c("NFL", "NFL", "NCAAF", "NCAAF", "MLB", "MLB", "NHL", "NHL", "NBA", "NBA")
+Location <- c("Home", "Away","Home", "Away","Home", "Away","Home", "Away","Home", "Away")
+Sample <- c(941,943,582,574,6511,6504,2749,2793,1761,1739)
+Sens <- c(0.67,0.65,0.62,0.75,0.55,0.65,0.64,0.68,0.60,0.62)
+
+Summary <- data.frame(league,Location,Sample,Sens)
+
+Summary <- Summary %>%
+  select(-league)
+
+Summary %>%
+  kbl( caption = "Compiled Decision Tree Results", col.names = c("Team Location", "Data Set Sample Size", "Sensitivity")) %>%
+    kable_classic_2("striped", full_width = T) %>%
+    pack_rows("NFL", 1, 2) %>%
+    pack_rows("NCAA Football", 3, 4) %>%
+    pack_rows("MLB", 5, 6) %>%
+    pack_rows("NHL", 7, 8) %>%
+    pack_rows("NBA", 9, 10)
+```
+
+As we can see from the results of this table, sensitivity-wise all of the decision trees performed well. When looking solely at the sensitivities, the only model that I would be concerned with using for real bets would be the home MLB data set. While placing a positive value bet 55% of the time is good enough to likely have positive value in your betting overall, this would likely be a very low margin and depending on how much value you are getting on each bet, might barely be enough to cover the "vig." That being said, the reason why sample size was included in this data set as well is because we have to be careful just looking at sensitivity for these small sample sizes. In particular the away NCAAF model seems to be a great model to start placing bets on with a sensitivity of 75%, but with a sample size of just 574 the overall validity of this model is extremely questionable and I would refrain from placing real bets on it.
 
 ## Conclusion
 
@@ -1367,4 +1413,4 @@ Overall, the first thing to keep in mind for all of these models is the relative
 
 These rankings are based on both the sensitivity of the models and the sample sizes of the data sets. If we decided to ignore the sample sizes though, sensitivities of over 60% are very impressive and would certainly be good enough to apply to real life bets, making all of the decision trees applicable besides the home MLB model. Since we cannot ignore the sample size limitations though I would only feel confident using the away MLB model.
 
-The next steps in this project would first be to continue scraping data and expanding our data sets as games continue to be played. After refining the models to larger data sets, if similar success rates remain we would then be able to apply these models to real games with real bets to see if they hold up. Another step that could be taken would be to engineer some sort of function that would allow a better to input the league, whether the team is home or away, and the lines for that team and have the function run through the decision tree for that line and feed the better its decision. This would be an important addition because it would allow us to use the most complex decision trees possible and have more accurate models because of it since a better would not have to manually trace through the decision tree. Finally, we could also do the same type of modeling for the other betting options, particularly spread which is as commonly bet on as money lines.
+The next steps in this project would first be to continue scraping data and expanding our data sets as games continue to be played. After refining the models to larger data sets, if similar success rates remain we would then be able to apply these models to real games with real bets to see if they hold up. Another step that could be taken would be to engineer some sort of function that would allow a bettor to input the league, whether the team is home or away, and the lines for that team and have the function run through the decision tree for that line and feed the bettor its decision. This would be an important addition because it would allow us to use the most complex decision trees possible and have more accurate models because of it since a bettor would not have to manually trace through the decision tree. Finally, we could also do the same type of modeling for the other betting options, particularly spread which is as commonly bet on as money lines.
